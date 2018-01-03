@@ -62,17 +62,29 @@ public class Game : MonoBehaviour {
       if (plane.Raycast(ray, out ray_distance)) {
         mPos = ray.GetPoint(ray_distance);
         // Debug.Log(string.Format("Clicked at ({0},{1})", mPos.x, mPos.y));
-
-        bool clickedOnExistingStrand = strandListContainsPoint(mPos);
+        Strand clickedStrand = null;
+        bool clickedOnExistingStrand = strandListContainsPoint(mPos, out clickedStrand);
         bool clickedOnExistingNode = GetOverlappingObjects(out node1, "Vertex", mPos, 0.1f);
 
         if(clickedOnExistingNode) {
           // Debug.Log(string.Format("Clicked on existing node: {0}", node1.name));
           existingNode = true;
         } else if(clickedOnExistingStrand) {
-          node1 = Instantiate(node, mPos, Quaternion.identity) as GameObject;
+          //Debug.Log(string.Format("Clicked on {0}", clickedStrand.PositionString()));
+          //Debug.Log(string.Format("mPos = {0}", mPos.ToString()));
+          Vector3 pos = clickedStrand.ClosestPoint(mPos);
+          //Debug.Log(string.Format("Closest point to mPos on strand: {0}", pos.ToString()));
+          Debug.Log(
+            string.Format(
+              "Approximated {0} as {1} on {2}",
+              mPos.ToString(),
+              pos.ToString(),
+              clickedStrand.PositionString()
+            )
+          );
+          node1 = Instantiate(node, pos, Quaternion.identity) as GameObject;
           node1.SetActive(false);
-          Node newNode = new Node(mPos.x, mPos.y);
+          Node newNode = new Node(pos.x, pos.y);
           nodeList.Add(newNode);
           existingNode = false;
           // Debug.Log("Created new node at: " + newNode.PositionString());
@@ -94,14 +106,17 @@ public class Game : MonoBehaviour {
           if (!nodeBounds.Contains(mPos)) {
             float startX, startY, endX, endY;
 
-            bool clickedOnExistingStrand = strandListContainsPoint(mPos);
+            Strand clickedStrand = null;
+            bool clickedOnExistingStrand = strandListContainsPoint(mPos, out clickedStrand);
             if(clickedOnExistingStrand) {
-
               bool clickedOnExistingNode = GetOverlappingObjects(out node2, "Vertex", mPos, 0.1f);
               if(!clickedOnExistingNode) {
-                node2 = Instantiate(node, mPos, Quaternion.identity) as GameObject;
+                //Debug.Log(string.Format("mPos = {0}", mPos.ToString()));
+                Vector3 pos = clickedStrand.ClosestPoint(mPos);
+                //Debug.Log(string.Format("Closest point to mPos on strand: {0}", pos.ToString()));
+                node2 = Instantiate(node, pos, Quaternion.identity) as GameObject;
                 node1.SetActive(true);
-                Node newNode = new Node(mPos.x, mPos.y);
+                Node newNode = new Node(pos.x, pos.y);
                 nodeList.Add(newNode);
                 // Debug.Log("Created new node at: " + newNode.PositionString());
               }
@@ -160,8 +175,8 @@ public class Game : MonoBehaviour {
         node2 = null;
       }
 
-      // ShowNodeList();
-      // ShowStrandList();
+      //ShowNodeList();
+      //ShowStrandList();
     }
 
     if (Input.GetMouseButton(0)) {
@@ -224,11 +239,14 @@ public class Game : MonoBehaviour {
     return Mathf.Sqrt(Mathf.Pow((x2 - x1), 2) + Mathf.Pow((y2 - y1), 2));
   }
 
-  bool strandListContainsPoint(Vector3 pos){
+  bool strandListContainsPoint(Vector3 pos, out Strand str){
     bool pointOnStrand = false;
-    foreach(var str in strandList){
-      if(str.ContainsPoint(pos.x, pos.y)){
+    str = null;
+    foreach (Strand s in strandList){
+      if(s.ContainsPoint(pos.x, pos.y)){
         pointOnStrand = true;
+        //Debug.Log(string.Format("Clicked on {0}", s.PositionString()));
+        str = s;
       }
     }
     return pointOnStrand;
