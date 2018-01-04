@@ -10,6 +10,7 @@ public class Game : MonoBehaviour {
   Plane plane;
   GameObject startNode, endNode;
   bool existingNode = false;
+  Strand startStrand = null, endStrand = null;
   List<Node> nodeList;
   List<Strand> strandList;
   int screenHeight, screenWidth;
@@ -72,18 +73,19 @@ public class Game : MonoBehaviour {
           // Debug.Log(string.Format("Clicked on existing node: {0}", node1.name));
           existingNode = true;
         } else if(clickedOnExistingStrand) {
+          startStrand = clickedStrand;
           //Debug.Log(string.Format("Clicked on {0}", clickedStrand.PositionString()));
           //Debug.Log(string.Format("mPos = {0}", mPos.ToString()));
           Vector3 pos = clickedStrand.ClosestPoint(mPos);
-          Debug.Log(string.Format("Closest point to mPos on strand: {0}", pos.ToString()));
-          Debug.Log(
-            string.Format(
-              "Approximated {0} as {1} on {2}",
-              mPos.ToString(),
-              pos.ToString(),
-              clickedStrand.PositionString()
-            )
-          );
+          // Debug.Log(string.Format("Closest point to mPos on strand: {0}", pos.ToString()));
+          // Debug.Log(
+          //   string.Format(
+          //     "Approximated {0} as {1} on {2}",
+          //     mPos.ToString(),
+          //     pos.ToString(),
+          //     clickedStrand.PositionString()
+          //   )
+          // );
           node1 = Instantiate(node, pos, Quaternion.identity) as GameObject;
           node1.SetActive(false);
           Node newNode = new Node(pos.x, pos.y);
@@ -114,6 +116,7 @@ public class Game : MonoBehaviour {
             if(clickedOnExistingStrand) {
               bool clickedOnExistingNode = GetOverlappingObjects(out node2, "Vertex", mPos, 0.1f);
               if(!clickedOnExistingNode) {
+                endStrand = clickedStrand;
                 //Debug.Log(string.Format("mPos = {0}", mPos.ToString()));
                 Vector3 pos = clickedStrand.ClosestPoint(mPos);
                 //Debug.Log(string.Format("Closest point to mPos on strand: {0}", pos.ToString()));
@@ -163,6 +166,18 @@ public class Game : MonoBehaviour {
                     drawnStrand.transform.localScale.y,
                     drawnStrand.transform.localScale.z
                   );
+
+                  Vector3 intersectPt = Vector3.zero;
+                  foreach(var str in strandList) {
+                    if(str.Equals(startStrand) || str.Equals(endStrand) || str.Equals(strandToAdd)){
+                      // Debug.Log(string.Format("Skipping {0}", str.PositionString()));
+                      continue;
+                    };
+                    if(strandToAdd.Intersects(str, out intersectPt)) {
+                      Instantiate(node, intersectPt, Quaternion.identity);
+                      nodeList.Add(new Node(intersectPt.x, intersectPt.y));
+                    }
+                  }
                 }
               }
             } else {
