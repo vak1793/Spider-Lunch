@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -61,6 +62,7 @@ public class Game : MonoBehaviour {
 
       if (plane.Raycast(ray, out ray_distance)) {
         mPos = ray.GetPoint(ray_distance);
+        mPos = new Vector3((float) System.Math.Round(mPos.x, 3), (float)System.Math.Round(mPos.y, 3), 0);
         // Debug.Log(string.Format("Clicked at ({0},{1})", mPos.x, mPos.y));
         Strand clickedStrand = null;
         bool clickedOnExistingStrand = strandListContainsPoint(mPos, out clickedStrand);
@@ -73,7 +75,7 @@ public class Game : MonoBehaviour {
           //Debug.Log(string.Format("Clicked on {0}", clickedStrand.PositionString()));
           //Debug.Log(string.Format("mPos = {0}", mPos.ToString()));
           Vector3 pos = clickedStrand.ClosestPoint(mPos);
-          //Debug.Log(string.Format("Closest point to mPos on strand: {0}", pos.ToString()));
+          Debug.Log(string.Format("Closest point to mPos on strand: {0}", pos.ToString()));
           Debug.Log(
             string.Format(
               "Approximated {0} as {1} on {2}",
@@ -97,6 +99,7 @@ public class Game : MonoBehaviour {
 
       if (plane.Raycast(ray, out ray_distance)) {
         mPos = ray.GetPoint(ray_distance);
+        mPos = new Vector3((float) System.Math.Round(mPos.x, 3), (float)System.Math.Round(mPos.y, 3), 0);
 
         // Debug.Log(string.Format("node1 at: ({0},{1})", node1.transform.position.x, node1.transform.position.y));
         if (node1) {

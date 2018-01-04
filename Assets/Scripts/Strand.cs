@@ -14,12 +14,12 @@ public class Strand {
     x2 = endNode.xPos();
     y2 = endNode.yPos();
 
-    m = (y2 - y1) / (x2 - x1);
+    m = (float) System.Math.Round((y2 - y1) / (x2 - x1), 3);
 
     if(double.IsInfinity(m)){
-      c = y1;
+      c = (float) System.Math.Round(y1, 3);
     } else {
-      c = y2 - (m * x2);
+      c = (float) System.Math.Round(y2 - (m * x2), 3);
     }
   }
 
@@ -108,13 +108,13 @@ public class Strand {
       pt[0] = x;
       pt[1] = c;
     } else {
-      float m2 = -1 / m;
-      float c2 = y - (m2 * x);
+      float m2 = (float) System.Math.Round(-1 / m, 3);
+      float c2 = (float) System.Math.Round(y - (m2 * x), 3);
 
-      pt[0] = (c2 + c) / (m2 - m);
-      pt[1] = ((m2 * c) - (m * c2)) / (m2 - m);
-      //Debug.Log(string.Format("line eqn y = {0}x + {1}", m, c));
-      //Debug.Log(string.Format("perpendicular y = {0}x + {1}", m2, c2));
+      pt[0] = (float) System.Math.Round((c - c2) / (m2 - m), 3);
+      pt[1] = (float) System.Math.Round(((m2 * c) - (m * c2)) / (m2 - m), 3);
+      Debug.Log(string.Format("line eqn y = {0}x + {1}", m, c));
+      Debug.Log(string.Format("perpendicular y = {0}x + {1}", m2, c2));
       float variance = pt[1] - (m2 * pt[0]) - c2;
       Debug.Log(string.Format("variance = {0}",variance));
     }
