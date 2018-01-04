@@ -7,12 +7,14 @@ public class Game : MonoBehaviour {
 
   public GameObject node, strand, windowFrame, spider;
   GameObject node1 = null, node2 = null;
+  GameObject player;
   Plane plane;
   GameObject startNode, endNode;
   bool existingNode = false;
   Strand startStrand = null, endStrand = null;
   List<Node> nodeList;
   List<Strand> strandList;
+  Vector3 positionToMove;
   int[,] adjacencyMatrix;
 
   // Use this for initialization
@@ -56,7 +58,8 @@ public class Game : MonoBehaviour {
 
     Instantiate(windowFrame, Vector3.zero, Quaternion.identity);
 
-    Instantiate(spider, spiderPos, Quaternion.identity);
+    player = Instantiate(spider, spiderPos, Quaternion.identity) as GameObject;
+    positionToMove = spiderPos;
 
     plane = new Plane(Vector3.back, GameObject.FindGameObjectWithTag("GameController").transform.position);
   }
@@ -66,6 +69,13 @@ public class Game : MonoBehaviour {
     Vector3 mPos;
     Ray ray;
     float ray_distance;
+
+    if(player.transform.position != positionToMove) {
+      Debug.Log(string.Format("Player at {0}", player.transform.position.ToString()));
+      Debug.Log(string.Format("Destination = {0}", positionToMove.ToString()));
+      player.transform.position = Vector3.Lerp(player.transform.position, positionToMove, 0.3f);
+    }
+
 
     if (Input.GetMouseButtonDown(0)) {
       ray = Camera.main.ScreenPointToRay(Input.mousePosition);
@@ -78,12 +88,14 @@ public class Game : MonoBehaviour {
         bool clickedOnExistingStrand = strandListContainsPoint(mPos, out clickedStrand);
         bool clickedOnExistingNode = GetOverlappingObjects(out node1, "Vertex", mPos, 0.1f);
 
+        // Spider spiderScript = spider.GetComponent<Spider>();
+
         if(clickedOnExistingNode) {
           // Debug.Log(string.Format("Clicked on existing node: {0}", node1.name));
           existingNode = true;
         } else if(clickedOnExistingStrand) {
           startStrand = clickedStrand;
-          //Debug.Log(string.Format("Clicked on {0}", clickedStrand.PositionString()));
+          // Debug.Log(string.Format("Clicked on {0}", clickedStrand.PositionString()));
           //Debug.Log(string.Format("mPos = {0}", mPos.ToString()));
           Vector3 pos = clickedStrand.ClosestPoint(mPos);
           // Debug.Log(string.Format("Closest point to mPos on strand: {0}", pos.ToString()));
@@ -95,6 +107,8 @@ public class Game : MonoBehaviour {
           //     clickedStrand.PositionString()
           //   )
           // );
+          // spiderScript.SetPositionToMove(pos);
+          positionToMove = pos;
           node1 = Instantiate(node, pos, Quaternion.identity) as GameObject;
           node1.name = string.Format("Node{0}", (nodeList.Count - 4));
 

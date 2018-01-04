@@ -21,6 +21,7 @@ GameObject:
   - component: {fileID: 4591290990470200}
   - component: {fileID: 212238452670527136}
   - component: {fileID: 58291330834602472}
+  - component: {fileID: 114940196935592576}
   m_Layer: 0
   m_Name: Spider
   m_TagString: Player
@@ -36,7 +37,7 @@ Transform:
   m_GameObject: {fileID: 1568066846987086}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 2, y: 2, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 0
@@ -56,6 +57,18 @@ CircleCollider2D:
   m_Offset: {x: 0, y: 0}
   serializedVersion: 2
   m_Radius: 0.3
+--- !u!114 &114940196935592576
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1568066846987086}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 806aef927a0d04dc9b83bf70de08ddb4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  energy: 100
 --- !u!212 &212238452670527136
 SpriteRenderer:
   m_ObjectHideFlags: 1
