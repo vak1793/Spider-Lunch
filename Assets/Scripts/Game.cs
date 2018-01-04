@@ -5,7 +5,7 @@ using UnityEngine;
 
 public class Game : MonoBehaviour {
 
-  public GameObject node, strand, windowFrame;
+  public GameObject node, strand, windowFrame, spider;
   GameObject node1 = null, node2 = null;
   Plane plane;
   GameObject startNode, endNode;
@@ -13,12 +13,19 @@ public class Game : MonoBehaviour {
   Strand startStrand = null, endStrand = null;
   List<Node> nodeList;
   List<Strand> strandList;
-  int screenHeight, screenWidth;
+  int[,] adjacencyMatrix;
 
   // Use this for initialization
   void Start () {
+    System.Random rnd = new System.Random();
+    float spiderStartX, spiderStartY;
+    spiderStartX = rnd.Next(-8, 8);
+    spiderStartY = 8;
+    Vector3 spiderPos = new Vector3(spiderStartX, spiderStartY, 0);
+
     nodeList = new List<Node>();
     strandList = new List<Strand>();
+    UpdateAdjacencyMatrix();
 
     // as per camera othographic size
     float frameX = 8;
@@ -48,6 +55,8 @@ public class Game : MonoBehaviour {
     strandList.Add(leftWall);
 
     Instantiate(windowFrame, Vector3.zero, Quaternion.identity);
+
+    Instantiate(spider, spiderPos, Quaternion.identity);
 
     plane = new Plane(Vector3.back, GameObject.FindGameObjectWithTag("GameController").transform.position);
   }
@@ -87,6 +96,8 @@ public class Game : MonoBehaviour {
           //   )
           // );
           node1 = Instantiate(node, pos, Quaternion.identity) as GameObject;
+          node1.name = string.Format("Node{0}", (nodeList.Count - 4));
+
           node1.SetActive(false);
           Node newNode = new Node(pos.x, pos.y);
           nodeList.Add(newNode);
@@ -121,6 +132,7 @@ public class Game : MonoBehaviour {
                 Vector3 pos = clickedStrand.ClosestPoint(mPos);
                 //Debug.Log(string.Format("Closest point to mPos on strand: {0}", pos.ToString()));
                 node2 = Instantiate(node, pos, Quaternion.identity) as GameObject;
+                node2.name = string.Format("Node{0}", (nodeList.Count - 4));
                 node1.SetActive(true);
                 Node newNode = new Node(pos.x, pos.y);
                 nodeList.Add(newNode);
@@ -159,6 +171,7 @@ public class Game : MonoBehaviour {
 
                   // Debug.Log(strandToAdd.PositionString());
                   strandList.Add(strandToAdd);
+                  drawnStrand.name = string.Format("Strand{0}", (strandList.Count - 4));
 
                   Vector3 originalVector = drawnStrand.transform.localScale;
                     drawnStrand.transform.localScale = new Vector3(
@@ -174,7 +187,8 @@ public class Game : MonoBehaviour {
                       continue;
                     };
                     if(strandToAdd.Intersects(str, out intersectPt)) {
-                      Instantiate(node, intersectPt, Quaternion.identity);
+                      GameObject newNode = Instantiate(node, intersectPt, Quaternion.identity) as GameObject;
+                      newNode.name = string.Format("Node{0}", (nodeList.Count - 4));
                       nodeList.Add(new Node(intersectPt.x, intersectPt.y));
                     }
                   }
@@ -201,28 +215,7 @@ public class Game : MonoBehaviour {
       ray = Camera.main.ScreenPointToRay(Input.mousePosition);
 
       if (node1) {
-      //float startX, startY, endX, endY;
-
-      //startX = node1.transform.position.x;
-      //startY = node1.transform.position.y;
-      //endX = startX;
-      //endY = startY;
-
-      //if (plane.Raycast(ray, out ray_distance)) {
-      //    mPos = ray.GetPoint(ray_distance);
-      //    endX = mPos.x;
-      //    endY = mPos.y;
-      //}
-
-      //float line_distance = Mathf.Sqrt(Mathf.Pow(endX - startX, 2) + Mathf.Pow(endY - startY, 2));
-
-      //GameObject a = Instantiate(strand, node1.transform.position, Quaternion.identity) as GameObject;
-      //Debug.DrawLine(
-      //    new Vector3(startX, startY, 0),
-      //    new Vector3(endX, endY, 0),
-      //    Color.white,
-      //    2
-      //);
+      // TODO: add intermediate animation
       }
     }
   }
@@ -285,6 +278,9 @@ public class Game : MonoBehaviour {
     }
   }
 
+  void SplitStrand(Strand str, Node n){
+  }
+
   void ShowNodeList() {
     Debug.Log(string.Format("{0} nodes at:", nodeList.Count));
 
@@ -298,6 +294,47 @@ public class Game : MonoBehaviour {
 
     foreach(var s in strandList){
       Debug.Log(s.PositionString());
+    }
+  }
+
+  public bool StrandBetween(Node otherStart, Node otherEnd) {
+    Strand strandToCompare = new Strand(otherStart, otherEnd);
+    bool strandExists = false;
+
+    foreach(Strand s in strandList) {
+      if(s.Equals(strandToCompare)){
+        strandExists = true;
+      }
+    }
+
+    return strandExists;
+  }
+
+  public void UpdateAdjacencyMatrix(){
+    int matrixSize = nodeList.Count;
+    adjacencyMatrix = new int[matrixSize, matrixSize];
+
+    for (int i = 0; i < matrixSize; i++) {
+      for (int j = 0; j < matrixSize; j++) {
+        adjacencyMatrix[i, j] = 0;
+      }
+    }
+
+    for (int i = 0; i < matrixSize; i++) {
+      for (int j = 0; j < matrixSize; j++) {
+        if(StrandBetween(nodeList[i], nodeList[j])){
+          adjacencyMatrix[i, j] = 1;
+        }
+      }
+    }
+  }
+
+  public void DisplayAdjacencyMatrix(){
+    int matrixSize = nodeList.Count;
+    for (int i = 0; i < matrixSize; i++) {
+      for (int j = 0; j < matrixSize; j++) {
+        // Debug.LogadjacencyMatrix[i, j] = 0;
+      }
     }
   }
 }

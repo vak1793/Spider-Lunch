@@ -70,12 +70,6 @@ public class Strand {
     deltaX = x2 - x1;
     deltaY = y2 - y1;
 
-    // Debug.Log(string.Format("({0},{1}) to ({2},{3})", x1, y1, x2, y2));
-    // Debug.Log(string.Format("x1 = {0}", x1));
-    // Debug.Log(string.Format("y1 = {0}", y1));
-    // Debug.Log(string.Format("x2 = {0}", x2));
-    // Debug.Log(string.Format("y2 = {0}", y2));
-
     bool withinXBounds = false, withinYBounds = false;
 
     if(x2 > x1){
@@ -109,27 +103,6 @@ public class Strand {
     if(!withinXBounds || !withinYBounds){
       return false;
     }
-    // if(x2 > x1 && y2 > y1){
-    //   if(x < x1 || x > x2 || y < y1 || y > y2){
-    //     Debug.Log("out of bounds");
-    //     return false;
-    //   }
-    // } else if(x2 > x1 && y2 < y1){
-    //   if(x < x1 || x > x2 || y < y2 || y > y1){
-    //     Debug.Log("out of bounds");
-    //     return false;
-    //   }
-    // } else if(x2 < x1 && y2 > y1){
-    //   if(x < x2 || x > x1 || y < y1 || y > y2){
-    //     Debug.Log("out of bounds");
-    //     return false;
-    //   }
-    // } else if(x2 < x1 && y2 < y1){
-    //   if(x < x2 || x > x1 || y < y2 || y > y1){
-    //     Debug.Log("out of bounds");
-    //     return false;
-    //   }
-    // }
 
     distFromLine = Mathf.Abs((deltaY * x) - (deltaX * y) + (x2 * y1) - (x1 * y2))/StrandLength();
     if(distFromLine > 0.1) {
@@ -187,7 +160,7 @@ public class Strand {
     }
 
     if(this.ContainsPoint(x, y) && other.ContainsPoint(x, y)){
-      Debug.Log(string.Format("{0} contains ({1},{2})", other.PositionString(), x, y));
+      // Debug.Log(string.Format("{0} contains ({1},{2})", other.PositionString(), x, y));
       intersectPt = new Vector3(x, y, 0);
       return true;
     }
