@@ -13,10 +13,11 @@ public class Game : MonoBehaviour {
   GameObject startNode, endNode;
   bool playerIsMoving, newStrandDrawn, drawnStrandIsSplit, existingNode = false;
   Strand startStrand = null, endStrand = null;
-  List<Node> nodeList;
+  List<Node> nodeList, playerMovePath;
   List<Strand> strandList;
   Vector3 positionToMove;
-  int[,] adjacencyMatrix;
+  float[,] adjacencyMatrix;
+  Graph graph;
 
   // Use this for initialization
   void Start () {
@@ -27,10 +28,10 @@ public class Game : MonoBehaviour {
     Vector3 spiderPos = new Vector3(spiderStartX, spiderStartY, 0);
 
     nodeList = new List<Node>();
+    playerMovePath = new List<Node>();
     strandList = new List<Strand>();
     intersectNodes = new List<GameObject>();
     splitStrands = new List<GameObject>();
-    UpdateAdjacencyMatrix();
 
     // as per camera othographic size
     float frameX = 8;
@@ -67,7 +68,9 @@ public class Game : MonoBehaviour {
     // Debug.Log("Initialized player, nowhere to move yet");
     playerIsMoving = false;
     newStrandDrawn = true;
+    UpdateAdjacencyMatrix();
 
+    graph = new Graph();
     plane = new Plane(Vector3.back, GameObject.FindGameObjectWithTag("GameController").transform.position);
   }
 
@@ -78,7 +81,7 @@ public class Game : MonoBehaviour {
     float ray_distance;
 
     if (Input.GetMouseButtonDown(0)) {
-      // if(playerIsMoving){ return; }
+      if(playerIsMoving){ return; }
 
       ray = Camera.main.ScreenPointToRay(Input.mousePosition);
 
@@ -87,7 +90,7 @@ public class Game : MonoBehaviour {
         mPos = new Vector3((float) System.Math.Round(mPos.x, 3), (float)System.Math.Round(mPos.y, 3), 0);
         // Debug.Log(string.Format("Clicked at ({0},{1})", mPos.x, mPos.y));
         Strand clickedStrand = null;
-        bool clickedOnExistingStrand = strandListContainsPoint(mPos, out clickedStrand);
+        bool clickedOnExistingStrand = StrandListContainsPoint(mPos, out clickedStrand);
         bool clickedOnExistingNode = GetOverlappingObjects(out node1, "Vertex", mPos, 0.1f);
 
         // Spider spiderScript = spider.GetComponent<Spider>();
@@ -133,6 +136,7 @@ public class Game : MonoBehaviour {
         // Debug.Log(string.Format("node1 at: ({0},{1})", node1.transform.position.x, node1.transform.position.y));
         if (node1) {
           positionToMove = node1.transform.position;
+          CalculatePlayerMovePath(player.transform.position, positionToMove);
           Renderer nodeRenderer = node1.GetComponent<Renderer>();
           Bounds nodeBounds = nodeRenderer.bounds;
 
@@ -140,7 +144,7 @@ public class Game : MonoBehaviour {
             float startX, startY, endX, endY;
 
             Strand clickedStrand = null;
-            bool clickedOnExistingStrand = strandListContainsPoint(mPos, out clickedStrand);
+            bool clickedOnExistingStrand = StrandListContainsPoint(mPos, out clickedStrand);
             if(clickedOnExistingStrand) {
               bool clickedOnExistingNode = GetOverlappingObjects(out node2, "Vertex", mPos, 0.1f);
               if(!clickedOnExistingNode) {
@@ -294,6 +298,7 @@ public class Game : MonoBehaviour {
         go.GetComponent<Renderer>().enabled = true;
       }
       UpdateAdjacencyMatrix();
+      // DisplayAdjacencyMatrix();
       newStrandDrawn = true;
 
       // reset nodes and strands for next click
@@ -335,7 +340,7 @@ public class Game : MonoBehaviour {
     return Mathf.Sqrt(Mathf.Pow((x2 - x1), 2) + Mathf.Pow((y2 - y1), 2));
   }
 
-  bool strandListContainsPoint(Vector3 pos, out Strand str){
+  bool StrandListContainsPoint(Vector3 pos, out Strand str){
     bool pointOnStrand = false;
     str = null;
     foreach (Strand s in strandList){
@@ -346,6 +351,19 @@ public class Game : MonoBehaviour {
       }
     }
     return pointOnStrand;
+  }
+
+  bool nodeListContainsAt(Node other, out int index){
+    index = -1;
+
+    for(int i = 0; i< nodeList.Count; i++){
+      if(other.Equals(nodeList[i])){
+        index = i;
+        return true;
+      }
+    }
+
+    return false;
   }
 
   void DeleteFirstNode() {
@@ -451,7 +469,7 @@ public class Game : MonoBehaviour {
 
   public void UpdateAdjacencyMatrix(){
     int matrixSize = nodeList.Count;
-    adjacencyMatrix = new int[matrixSize, matrixSize];
+    adjacencyMatrix = new float[matrixSize, matrixSize];
 
     for (int i = 0; i < matrixSize; i++) {
       for (int j = 0; j < matrixSize; j++) {
@@ -459,26 +477,108 @@ public class Game : MonoBehaviour {
       }
     }
 
-    for (int i = 0; i < matrixSize; i++) {
-      for (int j = 0; j < matrixSize; j++) {
+    for (int i = 0; i < matrixSize - 1; i++) {
+      for (int j = i + 1; j < matrixSize; j++) {
         if(StrandExistsBetween(nodeList[i], nodeList[j])){
-          adjacencyMatrix[i, j] = 1;
+          // multiplying with distance for greedy algorithm
+          float dist = nodeList[i].DistanceFrom(nodeList[j]);
+          adjacencyMatrix[i, j] = dist;
+          adjacencyMatrix[j, i] = dist;
         }
       }
     }
   }
 
   public void DisplayAdjacencyMatrix(){
-    int matrixSize = nodeList.Count;
+    int matrixSize = adjacencyMatrix.GetLength(0);
+    string output = "Adjacency matrix is:\n";
     for (int i = 0; i < matrixSize; i++) {
       for (int j = 0; j < matrixSize; j++) {
-        // Debug.LogadjacencyMatrix[i, j] = 0;
+        output += string.Format("{0} ", adjacencyMatrix[i,j]);
       }
+      output += "\n";
     }
+    Debug.Log(output);
   }
 
-  void CalculatePlayerMovePath(){
-    // TODO
+  void CalculatePlayerMovePath(Vector3 playerStart, Vector3 playerDestination){
+    Strand startStrand, endStrand;
+    Node startNode, endNode;
+    int startIndex, finishIndex;
+
+    UpdateAdjacencyMatrix();
+    int matrixSize = adjacencyMatrix.GetLength(0);
+    // Debug.Log("Inside CalculatePlayerMovePath");
+    // Debug.Log(string.Format("AdjacencyMatrix size = {0}", matrixSize));
+    // Debug.Log(string.Format("nodeList size = {0}", nodeList.Count));
+    DisplayAdjacencyMatrix();
+
+    Dictionary<Node, Dictionary<Node, float>> vertexList = new Dictionary<Node, Dictionary<Node, float>>();
+    vertexList.isReadOnly = true;
+    Dictionary<Node, float> nodeMap = new Dictionary<Node, float>();
+    for(int i = 0; i < matrixSize - 1; i++){
+      for(int j = 0; j < matrixSize - 1; j++){
+        // Debug.Log(string.Format("nodeMap size = {0}", nodeMap.Count));
+        if(adjacencyMatrix[i,j] > 0){
+          nodeMap.Add(nodeList[j], adjacencyMatrix[i,j]);
+        }
+      }
+      vertexList[nodeList[i]] = nodeMap;
+      // graph.addVertex(nodeList[i], nodeMap);
+
+      string nMapString = "";
+      foreach(var n in nodeMap){
+        nMapString += string.Format("{0}, ", n.Key.PositionString());
+      }
+      Debug.Log(string.Format("nodeMap for {0}: contains {1}", nodeList[i].PositionString(), nMapString));
+      nodeMap.Clear();
+    }
+    Debug.Log("Added Graph vertices");
+    string output = "Vertices:\n";
+    int k = 1;
+    foreach (var vertex in vertexList) {
+      string edges = string.Format("{0} edges = [", vertex.Value.Count);
+      k = 1;
+      foreach (var edge in vertex.Value) {
+        edges += string.Format("{0}, ", k);
+        k++;
+        // edges += string.Format("{0}: {1},", edge.Key.PositionString(), edge.Value);
+      }
+      edges += "]";
+      output += string.Format("Vertex: {0}, Edges: {1}\n", vertex.Key.PositionString(), edges);
+    }
+    Debug.Log(output);
+
+    if(StrandListContainsPoint(playerStart, out startStrand)
+      && StrandListContainsPoint(playerDestination, out endStrand)){
+        startNode = startStrand.GetClosestEnd(playerStart);
+        endNode = endStrand.GetClosestEnd(playerDestination);
+
+        if(startStrand.Equals(endStrand)){
+          return;
+        }
+
+        if(nodeListContainsAt(startNode, out startIndex) && nodeListContainsAt(endNode, out finishIndex)){
+          if(startNode.Equals(endNode)){
+            return;
+          }
+          // Debug.Log(string.Format("Calculating path from {0} to {1}:", startNode.PositionString(), endNode.PositionString()));
+
+          graph = new Graph(vertexList);
+          playerMovePath = graph.ShortestPath(startNode, endNode);
+
+          Debug.Log(string.Format("{0} nodes at:", playerMovePath.Count));
+
+          foreach(var n in playerMovePath){
+            Debug.Log(n.PositionString());
+          }
+          // if(startIndex > finishIndex) {
+          //   int temp = startIndex;
+          //   startIndex = finishIndex;
+          //   finishIndex = temp;
+          // }
+        }
+    }
   }
 
   GameObject DrawScaledStrand(float startX, float startY, float endX, float endY) {

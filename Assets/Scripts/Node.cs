@@ -30,4 +30,15 @@ public class Node {
     }
     return false;
   }
+
+  public float DistanceFrom(Node other){
+    float x1, y1, x2, y2;
+
+    x1 = x;
+    y1 = y;
+    x2 = other.xPos();
+    y2 = other.yPos();
+
+    return Mathf.Sqrt(Mathf.Pow(x2 - x1, 2) + Mathf.Pow(y2 - y1, 2));
+  }
 }

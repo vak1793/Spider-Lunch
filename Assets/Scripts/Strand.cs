@@ -174,4 +174,14 @@ public class Strand {
     }
     return false;
   }
+
+  public Node GetClosestEnd(Vector3 pt){
+    Node closestNode, searchPt = new Node(pt.x, pt.y);
+
+    float startDist = startNode.DistanceFrom(searchPt);
+    float endDist = endNode.DistanceFrom(searchPt);
+
+    closestNode = (startDist <= endDist) ? startNode : endNode;
+    return closestNode;
+  }
 }
