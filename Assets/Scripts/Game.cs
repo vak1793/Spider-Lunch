@@ -6,11 +6,12 @@ using UnityEngine;
 public class Game : MonoBehaviour {
 
   public GameObject node, strand, windowFrame, spider;
-  GameObject node1 = null, node2 = null;
+  GameObject node1 = null, node2 = null, drawnStrand = null;
   GameObject player;
+  List<GameObject> intersectNodes, splitStrands;
   Plane plane;
   GameObject startNode, endNode;
-  bool existingNode = false;
+  bool playerIsMoving, newStrandDrawn, drawnStrandIsSplit, existingNode = false;
   Strand startStrand = null, endStrand = null;
   List<Node> nodeList;
   List<Strand> strandList;
@@ -27,6 +28,8 @@ public class Game : MonoBehaviour {
 
     nodeList = new List<Node>();
     strandList = new List<Strand>();
+    intersectNodes = new List<GameObject>();
+    splitStrands = new List<GameObject>();
     UpdateAdjacencyMatrix();
 
     // as per camera othographic size
@@ -59,7 +62,11 @@ public class Game : MonoBehaviour {
     Instantiate(windowFrame, Vector3.zero, Quaternion.identity);
 
     player = Instantiate(spider, spiderPos, Quaternion.identity) as GameObject;
+    player.name = "Player";
     positionToMove = spiderPos;
+    // Debug.Log("Initialized player, nowhere to move yet");
+    playerIsMoving = false;
+    newStrandDrawn = true;
 
     plane = new Plane(Vector3.back, GameObject.FindGameObjectWithTag("GameController").transform.position);
   }
@@ -70,14 +77,9 @@ public class Game : MonoBehaviour {
     Ray ray;
     float ray_distance;
 
-    if(player.transform.position != positionToMove) {
-      Debug.Log(string.Format("Player at {0}", player.transform.position.ToString()));
-      Debug.Log(string.Format("Destination = {0}", positionToMove.ToString()));
-      player.transform.position = Vector3.Lerp(player.transform.position, positionToMove, 0.3f);
-    }
-
-
     if (Input.GetMouseButtonDown(0)) {
+      // if(playerIsMoving){ return; }
+
       ray = Camera.main.ScreenPointToRay(Input.mousePosition);
 
       if (plane.Raycast(ray, out ray_distance)) {
@@ -108,11 +110,11 @@ public class Game : MonoBehaviour {
           //   )
           // );
           // spiderScript.SetPositionToMove(pos);
-          positionToMove = pos;
           node1 = Instantiate(node, pos, Quaternion.identity) as GameObject;
           node1.name = string.Format("Node{0}", (nodeList.Count - 4));
 
-          node1.SetActive(false);
+          // node1.SetActive(false);
+          node1.GetComponent<Renderer>().enabled = false;
           Node newNode = new Node(pos.x, pos.y);
           nodeList.Add(newNode);
           existingNode = false;
@@ -130,6 +132,7 @@ public class Game : MonoBehaviour {
 
         // Debug.Log(string.Format("node1 at: ({0},{1})", node1.transform.position.x, node1.transform.position.y));
         if (node1) {
+          positionToMove = node1.transform.position;
           Renderer nodeRenderer = node1.GetComponent<Renderer>();
           Bounds nodeBounds = nodeRenderer.bounds;
 
@@ -147,7 +150,8 @@ public class Game : MonoBehaviour {
                 //Debug.Log(string.Format("Closest point to mPos on strand: {0}", pos.ToString()));
                 node2 = Instantiate(node, pos, Quaternion.identity) as GameObject;
                 node2.name = string.Format("Node{0}", (nodeList.Count - 4));
-                node1.SetActive(true);
+                // node2.SetActive(false);
+                node2.GetComponent<Renderer>().enabled = false;
                 Node newNode = new Node(pos.x, pos.y);
                 nodeList.Add(newNode);
                 // Debug.Log("Created new node at: " + newNode.PositionString());
@@ -163,7 +167,6 @@ public class Game : MonoBehaviour {
               float spriteSize = strand.GetComponent<SpriteRenderer>().bounds.size.x;
               float scale = lineDistance / spriteSize;
 
-              // Physics2D.Raycast();
               if(node2) {
                 Node n1 = new Node(startX, startY);
                 Node n2 = new Node(endX, endY);
@@ -177,35 +180,56 @@ public class Game : MonoBehaviour {
                 }
 
                 if(!strandPresent) {
-                  GameObject drawnStrand = Instantiate(
-                  strand,
-                  node1.transform.position,
-                  Quaternion.AngleAxis(lineAngle, Vector3.forward)
+                  drawnStrand = Instantiate(
+                    strand,
+                    node1.transform.position,
+                    Quaternion.AngleAxis(lineAngle, Vector3.forward)
                   ) as GameObject;
 
                   // Debug.Log(strandToAdd.PositionString());
                   strandList.Add(strandToAdd);
                   drawnStrand.name = string.Format("Strand{0}", (strandList.Count - 4));
+                  drawnStrand.GetComponent<Renderer>().enabled = false;
+                  // drawnStrand.SetActive(false);
 
                   Vector3 originalVector = drawnStrand.transform.localScale;
-                    drawnStrand.transform.localScale = new Vector3(
+                  drawnStrand.transform.localScale = new Vector3(
                     scale,
                     drawnStrand.transform.localScale.y,
                     drawnStrand.transform.localScale.z
                   );
 
                   Vector3 intersectPt = Vector3.zero;
-                  foreach(var str in strandList) {
+                  drawnStrandIsSplit = false;
+                  for(int i = strandList.Count-1; i >= 0; i--) {
+                    Strand str = strandList[i];
                     if(str.Equals(startStrand) || str.Equals(endStrand) || str.Equals(strandToAdd)){
                       // Debug.Log(string.Format("Skipping {0}", str.PositionString()));
                       continue;
                     };
                     if(strandToAdd.Intersects(str, out intersectPt)) {
+                      splitStrands = SplitStrand(str, new Node[] { new Node(intersectPt.x, intersectPt.y) });
                       GameObject newNode = Instantiate(node, intersectPt, Quaternion.identity) as GameObject;
+                      newNode.GetComponent<Renderer>().enabled = false;
+                      intersectNodes.Add(newNode);
                       newNode.name = string.Format("Node{0}", (nodeList.Count - 4));
                       nodeList.Add(new Node(intersectPt.x, intersectPt.y));
                     }
                   }
+                  if(intersectNodes.Count > 0){
+                    drawnStrandIsSplit = true;
+                    Node[] iNodes = new Node[intersectNodes.Count];
+                    // Debug.Log(string.Format("{0} intersection points", iNodes.Length));
+                    for(int j = 0; j < intersectNodes.Count; j++){
+                      GameObject goTemp = intersectNodes[j];
+
+                      iNodes[j] = new Node(goTemp.transform.position.x, goTemp.transform.position.y);
+                    }
+                    splitStrands = SplitStrand(strandToAdd, iNodes, true);
+                    Destroy(drawnStrand);
+                  }
+
+                  newStrandDrawn = false;
                 }
               }
             } else {
@@ -217,8 +241,8 @@ public class Game : MonoBehaviour {
           }
         }
 
-        node1 = null;
-        node2 = null;
+        // node1 = null;
+        // node2 = null;
       }
 
       //ShowNodeList();
@@ -231,6 +255,53 @@ public class Game : MonoBehaviour {
       if (node1) {
       // TODO: add intermediate animation
       }
+    }
+
+    if(player.transform.position != positionToMove) {
+      // Debug.Log(string.Format("Player at {0}", player.transform.position.ToString()));
+      // Debug.Log(string.Format("Destination = {0}", positionToMove.ToString()));
+      player.transform.position = Vector3.Lerp(player.transform.position, positionToMove, 0.075f);
+      // Debug.Log("player is moving");
+      if((player.transform.position - positionToMove).magnitude < 0.15){
+        playerIsMoving = false;
+      } else {
+        playerIsMoving = true;
+      }
+    } else {
+      playerIsMoving = false;
+    }
+
+    if(!playerIsMoving && !newStrandDrawn){
+      // Debug.Log("player has reached clicked point, time to draw strand");
+      if(!node1 || !node2){
+        return;
+      }
+      // node1.SetActive(true);
+      node1.GetComponent<Renderer>().enabled = true;
+      // node2.SetActive(true);
+      node2.GetComponent<Renderer>().enabled = true;
+      // drawnStrand.SetActive(true);
+      if(!drawnStrandIsSplit){
+        // Debug.Log("Strand with no intersection");
+        drawnStrand.GetComponent<Renderer>().enabled = true;
+      } else {
+        // Debug.Log(string.Format("Strand split into {0}", splitStrands.Count));
+        foreach (GameObject go in splitStrands) {
+          go.GetComponent<Renderer>().enabled = true;
+        }
+      }
+      foreach (GameObject go in intersectNodes) {
+        go.GetComponent<Renderer>().enabled = true;
+      }
+      UpdateAdjacencyMatrix();
+      newStrandDrawn = true;
+
+      // reset nodes and strands for next click
+      node1 = null;
+      node2 = null;
+      drawnStrand = null;
+      intersectNodes.Clear();
+      splitStrands.Clear();
     }
   }
 
@@ -292,7 +363,61 @@ public class Game : MonoBehaviour {
     }
   }
 
-  void SplitStrand(Strand str, Node n){
+  List<GameObject> SplitStrand(Strand str, Node[] n, bool hidden = false){
+    List<GameObject> splits = new List<GameObject>();
+    int strandIndex = strandList.IndexOf(str);
+    float startX, startY, endX, endY;
+
+    GameObject strandGO = GameObject.Find(string.Format("Strand{0}", strandIndex - 3));
+    // Debug.Log(string.Format("Splitting Strand{0}", strandIndex - 3));
+    Node startN = str.GetStartNode(), endN = str.GetEndNode();
+
+    // string listOfStrandGOs = "Strands currently in game: ";
+    // Debug.Log(string.Format("strandList size = {0}", strandList.Count));
+    // // listOfStrandGOs = "Strands currently in game:";
+    // foreach(GameObject sgo in GameObject.FindGameObjectsWithTag("Edge")){
+    //   listOfStrandGOs += string.Format("{0}, ", sgo.name);
+    // }
+    // Debug.Log(listOfStrandGOs);
+
+    // Debug.Log(string.Format("Removing Strand{0} from strandList", strandIndex - 3));
+    strandList.RemoveAt(strandIndex);
+    Destroy(strandGO);
+    strandGO = null;
+
+    for(int i = strandIndex; i < strandList.Count; i++){
+      GameObject go = GameObject.Find(string.Format("Strand{0}", i - 2));
+      go.name = string.Format("Strand{0}", i - 3);
+    }
+
+    // Debug.Log(string.Format("strandList size = {0}", strandList.Count));
+    // listOfStrandGOs = "Strands currently in game: ";
+    // foreach(GameObject sgo in GameObject.FindGameObjectsWithTag("Edge")){
+    //   listOfStrandGOs += string.Format("{0}, ", sgo.name);
+    // }
+    // Debug.Log(listOfStrandGOs);
+
+    startX = startN.xPos();
+    startY = startN.yPos();
+    endX = endN.xPos();
+    endY = endN.yPos();
+
+    GameObject ds;
+    ds = DrawScaledStrand(startX, startY, n[0].xPos(), n[0].yPos());
+    ds.GetComponent<Renderer>().enabled = !hidden;
+    splits.Add(ds);
+
+    for(int i = 0; i < n.Length - 1; i++){
+      ds = DrawScaledStrand(n[i].xPos(), n[i].yPos(), n[i+1].xPos(), n[i+1].yPos());
+      ds.GetComponent<Renderer>().enabled = !hidden;
+      splits.Add(ds);
+    }
+
+    ds = DrawScaledStrand(n[n.Length-1].xPos(), n[n.Length-1].yPos(), endX, endY);
+    ds.GetComponent<Renderer>().enabled = !hidden;
+    splits.Add(ds);
+
+    return splits;
   }
 
   void ShowNodeList() {
@@ -311,7 +436,7 @@ public class Game : MonoBehaviour {
     }
   }
 
-  public bool StrandBetween(Node otherStart, Node otherEnd) {
+  public bool StrandExistsBetween(Node otherStart, Node otherEnd) {
     Strand strandToCompare = new Strand(otherStart, otherEnd);
     bool strandExists = false;
 
@@ -336,7 +461,7 @@ public class Game : MonoBehaviour {
 
     for (int i = 0; i < matrixSize; i++) {
       for (int j = 0; j < matrixSize; j++) {
-        if(StrandBetween(nodeList[i], nodeList[j])){
+        if(StrandExistsBetween(nodeList[i], nodeList[j])){
           adjacencyMatrix[i, j] = 1;
         }
       }
@@ -350,5 +475,36 @@ public class Game : MonoBehaviour {
         // Debug.LogadjacencyMatrix[i, j] = 0;
       }
     }
+  }
+
+  void CalculatePlayerMovePath(){
+    // TODO
+  }
+
+  GameObject DrawScaledStrand(float startX, float startY, float endX, float endY) {
+    float spriteSize = strand.GetComponent<SpriteRenderer>().bounds.size.x;
+    float lineDistance = Mathf.Sqrt(Mathf.Pow(endX - startX, 2) + Mathf.Pow(endY - startY, 2));
+    float lineAngle = Mathf.Atan2(endY - startY, endX - startX) * (180 / Mathf.PI);
+    float scale = lineDistance / spriteSize;
+
+    Strand strandToAdd = new Strand(
+      new Node(startX, startY),
+      new Node(endX, endY)
+    );
+    GameObject newStrand = Instantiate(
+      strand,
+      new Vector3(startX, startY, 0),
+      Quaternion.AngleAxis(lineAngle, Vector3.forward)
+    ) as GameObject;
+
+    strandList.Add(strandToAdd);
+    newStrand.name = string.Format("Strand{0}", (strandList.Count - 4));
+    Vector3 originalRotation = newStrand.transform.localScale;
+    newStrand.transform.localScale = new Vector3(
+      scale,
+      originalRotation.y,
+      originalRotation.z
+    );
+    return newStrand;
   }
 }

@@ -23,6 +23,14 @@ public class Strand {
     }
   }
 
+  public Node GetStartNode(){
+    return startNode;
+  }
+
+  public Node GetEndNode(){
+    return endNode;
+  }
+
   public float getLineM(){
     return m;
   }
