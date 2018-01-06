@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -15,7 +16,7 @@ public class Game : MonoBehaviour {
   Strand startStrand = null, endStrand = null;
   List<Node> nodeList, playerMovePath;
   List<Strand> strandList;
-  Vector3 positionToMove;
+  Vector3 positionToMove, nextNode;
   float[,] adjacencyMatrix;
   Graph graph;
 
@@ -207,10 +208,16 @@ public class Game : MonoBehaviour {
                   drawnStrandIsSplit = false;
                   for(int i = strandList.Count-1; i >= 0; i--) {
                     Strand str = strandList[i];
-                    if(str.Equals(startStrand) || str.Equals(endStrand) || str.Equals(strandToAdd)){
-                      // Debug.Log(string.Format("Skipping {0}", str.PositionString()));
+                    if(str.Equals(strandToAdd)){
+                      // Skipping self
                       continue;
                     };
+                    if(str.Equals(startStrand) && !existingNode){
+                      splitStrands = SplitStrand(str, new Node[] { new Node(startX, startY) });
+                    }
+                    if(str.Equals(endStrand) && !clickedOnExistingNode){
+                      splitStrands = SplitStrand(str, new Node[] { new Node(endX, endY) });
+                    }
                     if(strandToAdd.Intersects(str, out intersectPt)) {
                       splitStrands = SplitStrand(str, new Node[] { new Node(intersectPt.x, intersectPt.y) });
                       GameObject newNode = Instantiate(node, intersectPt, Quaternion.identity) as GameObject;
@@ -264,12 +271,27 @@ public class Game : MonoBehaviour {
     if(player.transform.position != positionToMove) {
       // Debug.Log(string.Format("Player at {0}", player.transform.position.ToString()));
       // Debug.Log(string.Format("Destination = {0}", positionToMove.ToString()));
-      player.transform.position = Vector3.Lerp(player.transform.position, positionToMove, 0.075f);
       // Debug.Log("player is moving");
-      if((player.transform.position - positionToMove).magnitude < 0.15){
-        playerIsMoving = false;
-      } else {
+      if(playerMovePath.Count > 0){
         playerIsMoving = true;
+        Node nodeToMove = playerMovePath[0];
+        nextNode = new Vector3(nodeToMove.xPos(), nodeToMove.yPos(), 0);
+        player.transform.position = Vector3.Lerp(player.transform.position, nextNode, 0.075f);
+
+        if((player.transform.position - nextNode).magnitude < 0.15){
+          playerMovePath.RemoveAt(0);
+        }
+        // if(player.transform.position == nextNode){
+        //   playerMovePath.RemoveAt(0);
+        // }
+      } else {
+        player.transform.position = Vector3.Lerp(player.transform.position, positionToMove, 0.075f);
+
+        if((player.transform.position - positionToMove).magnitude < 0.15){
+          playerIsMoving = false;
+        } else {
+          playerIsMoving = true;
+        }
       }
     } else {
       playerIsMoving = false;
@@ -300,6 +322,7 @@ public class Game : MonoBehaviour {
       UpdateAdjacencyMatrix();
       // DisplayAdjacencyMatrix();
       newStrandDrawn = true;
+      player.transform.position = node1.transform.position;
 
       // reset nodes and strands for next click
       node1 = null;
@@ -384,6 +407,10 @@ public class Game : MonoBehaviour {
   List<GameObject> SplitStrand(Strand str, Node[] n, bool hidden = false){
     List<GameObject> splits = new List<GameObject>();
     int strandIndex = strandList.IndexOf(str);
+
+    if(strandIndex < 4){
+      return splits;
+    }
     float startX, startY, endX, endY;
 
     GameObject strandGO = GameObject.Find(string.Format("Strand{0}", strandIndex - 3));
@@ -459,7 +486,11 @@ public class Game : MonoBehaviour {
     bool strandExists = false;
 
     foreach(Strand s in strandList) {
-      if(s.Equals(strandToCompare)){
+      bool strandContainsStartPoint = s.ContainsPoint(otherStart.xPos(), otherStart.yPos());
+      bool strandContainsEndPoint = s.ContainsPoint(otherEnd.xPos(), otherEnd.yPos());
+      bool isReqdStrand = s.Equals(strandToCompare);
+
+      if(isReqdStrand || (strandContainsStartPoint && strandContainsEndPoint)){
         strandExists = true;
       }
     }
@@ -503,81 +534,149 @@ public class Game : MonoBehaviour {
 
   void CalculatePlayerMovePath(Vector3 playerStart, Vector3 playerDestination){
     Strand startStrand, endStrand;
-    Node startNode, endNode;
+    Node s1, s2, e1, e2;
     int startIndex, finishIndex;
+    List<Node> path1, path2, path3, path4;
+
+    path1 = new List<Node>();
+    path2 = new List<Node>();
+    path3 = new List<Node>();
+    path4 = new List<Node>();
 
     UpdateAdjacencyMatrix();
     int matrixSize = adjacencyMatrix.GetLength(0);
     // Debug.Log("Inside CalculatePlayerMovePath");
     // Debug.Log(string.Format("AdjacencyMatrix size = {0}", matrixSize));
     // Debug.Log(string.Format("nodeList size = {0}", nodeList.Count));
-    DisplayAdjacencyMatrix();
+    // DisplayAdjacencyMatrix();
 
     Dictionary<Node, Dictionary<Node, float>> vertexList = new Dictionary<Node, Dictionary<Node, float>>();
-    vertexList.isReadOnly = true;
     Dictionary<Node, float> nodeMap = new Dictionary<Node, float>();
     for(int i = 0; i < matrixSize - 1; i++){
       for(int j = 0; j < matrixSize - 1; j++){
-        // Debug.Log(string.Format("nodeMap size = {0}", nodeMap.Count));
         if(adjacencyMatrix[i,j] > 0){
           nodeMap.Add(nodeList[j], adjacencyMatrix[i,j]);
         }
       }
-      vertexList[nodeList[i]] = nodeMap;
-      // graph.addVertex(nodeList[i], nodeMap);
-
-      string nMapString = "";
-      foreach(var n in nodeMap){
-        nMapString += string.Format("{0}, ", n.Key.PositionString());
-      }
-      Debug.Log(string.Format("nodeMap for {0}: contains {1}", nodeList[i].PositionString(), nMapString));
+      vertexList[nodeList[i]] = new Dictionary<Node, float>(nodeMap);
       nodeMap.Clear();
     }
-    Debug.Log("Added Graph vertices");
-    string output = "Vertices:\n";
-    int k = 1;
-    foreach (var vertex in vertexList) {
-      string edges = string.Format("{0} edges = [", vertex.Value.Count);
-      k = 1;
-      foreach (var edge in vertex.Value) {
-        edges += string.Format("{0}, ", k);
-        k++;
-        // edges += string.Format("{0}: {1},", edge.Key.PositionString(), edge.Value);
-      }
-      edges += "]";
-      output += string.Format("Vertex: {0}, Edges: {1}\n", vertex.Key.PositionString(), edges);
-    }
-    Debug.Log(output);
 
     if(StrandListContainsPoint(playerStart, out startStrand)
       && StrandListContainsPoint(playerDestination, out endStrand)){
-        startNode = startStrand.GetClosestEnd(playerStart);
-        endNode = endStrand.GetClosestEnd(playerDestination);
+
+        // startNode = startStrand.GetClosestEnd(playerStart);
+        // endNode = endStrand.GetClosestEnd(playerDestination);
 
         if(startStrand.Equals(endStrand)){
           return;
         }
+        Debug.Log(string.Format("startStrand = {0}", startStrand.PositionString()));
+        Debug.Log(string.Format("endStrand = {0}", endStrand.PositionString()));
 
-        if(nodeListContainsAt(startNode, out startIndex) && nodeListContainsAt(endNode, out finishIndex)){
-          if(startNode.Equals(endNode)){
-            return;
-          }
-          // Debug.Log(string.Format("Calculating path from {0} to {1}:", startNode.PositionString(), endNode.PositionString()));
+        s1 = startStrand.GetStartNode();
+        s2 = startStrand.GetEndNode();
+        e1 = startStrand.GetStartNode();
+        e2 = startStrand.GetEndNode();
 
-          graph = new Graph(vertexList);
-          playerMovePath = graph.ShortestPath(startNode, endNode);
+        Node playerStartNode = new Node(playerStart.x, playerStart.y),
+             playerDestinationNode = new Node(playerDestination.x, playerDestination.y);
 
-          Debug.Log(string.Format("{0} nodes at:", playerMovePath.Count));
-
-          foreach(var n in playerMovePath){
-            Debug.Log(n.PositionString());
-          }
-          // if(startIndex > finishIndex) {
-          //   int temp = startIndex;
-          //   startIndex = finishIndex;
-          //   finishIndex = temp;
-          // }
+        if(nodeListContainsAt(playerStartNode, out startIndex)){
+          Debug.Log(string.Format("Player position on existing node at {0}", playerStartNode.PositionString()));
+          s1 = playerStartNode;
+          s2 = playerStartNode;
         }
+        // if(nodeListContainsAt(playerDestinationNode, out finishIndex)){
+        //   Debug.Log(string.Format("Destination is existing node at {0}", playerDestinationNode.PositionString()));
+        //   e1 = playerDestinationNode;
+        //   e2 = playerDestinationNode;
+        // }
+
+        graph = new Graph(vertexList);
+
+        string pathList;
+
+        if(nodeListContainsAt(s1, out startIndex) && nodeListContainsAt(e1, out finishIndex)){
+          if(s1.Equals(e1)){
+            path1.Add(s1);
+          } else {
+            path1 = graph.ShortestPath(s1, e1);
+          }
+        }
+
+        pathList = string.Format("{0} nodes in path1: {1} to {2} => ", path1.Count, s1.PositionString(), e1.PositionString());
+        foreach(var n in path1){
+          pathList += string.Format("{0} ", n.PositionString());
+        }
+        Debug.Log(pathList);
+
+        if(nodeListContainsAt(s1, out startIndex) && nodeListContainsAt(e2, out finishIndex)){
+          if(s1.Equals(e2)){
+            path2.Add(s1);
+          } else {
+            path2 = graph.ShortestPath(s1, e2);
+          }
+        }
+
+        pathList = string.Format("{0} nodes in path2: {1} to {2} => ", path2.Count, s1.PositionString(), e2.PositionString());
+        foreach(var n in path2){
+          pathList += string.Format("{0} ", n.PositionString());
+        }
+        Debug.Log(pathList);
+
+        if(nodeListContainsAt(s2, out startIndex) && nodeListContainsAt(e1, out finishIndex)){
+          if(s2.Equals(e1)){
+            path3.Add(s2);
+          } else {
+            path3 = graph.ShortestPath(s2, e1);
+          }
+        }
+
+        pathList = string.Format("{0} nodes in path3: {1} to {2} => ", path3.Count, s2.PositionString(), e1.PositionString());
+        foreach(var n in path3){
+          pathList += string.Format("{0} ", n.PositionString());
+        }
+        Debug.Log(pathList);
+
+        if(nodeListContainsAt(s2, out startIndex) && nodeListContainsAt(e2, out finishIndex)){
+          if(s2.Equals(e2)){
+            path4.Add(s2);
+          } else {
+            path4 = graph.ShortestPath(s2, e2);
+          }
+        }
+
+        pathList = string.Format("{0} nodes in path4 {1} to {2} => ", path4.Count, s2.PositionString(), e2.PositionString());
+        foreach(var n in path4){
+          pathList += string.Format("{0} ", n.PositionString());
+        }
+        Debug.Log(pathList);
+
+        List<Node>[] paths = new List<Node>[] { path1, path2, path3, path4 };
+        // if(path1 != null && path1.Count > 0) { paths.Add(path1); }
+        // if(path2 != null && path2.Count > 0) { paths.Add(path2); }
+        // if(path3 != null && path3.Count > 0) { paths.Add(path3); }
+        // if(path4 != null && path4.Count > 0) { paths.Add(path4); }
+
+
+        Debug.Log(string.Format("Player move path has {0} nodes", playerMovePath.Count));
+        // int pathIndex = ShortestDistance(paths);
+        // if(pathIndex > -1){
+        //   string pointsToTraverse = "Nodes at ";
+        //   foreach(var selectedNode in paths[pathIndex]){
+        //     pointsToTraverse += string.Format("{0}, ", selectedNode.PositionString());
+        //   }
+        //   Debug.Log(pointsToTraverse);
+        //   playerMovePath = paths[pathIndex];
+        // }
+        playerMovePath = ShortestDistance(paths);
+
+        string playerpathlist = string.Format("{0} nodes in playerMovePath: ", playerMovePath.Count);
+        foreach(var n in playerMovePath){
+          playerpathlist += string.Format("{0} ", n.PositionString());
+        }
+        Debug.Log(playerpathlist);
     }
   }
 
@@ -606,5 +705,53 @@ public class Game : MonoBehaviour {
       originalRotation.z
     );
     return newStrand;
+  }
+
+  List<Node> ShortestDistance(List<Node>[] paths){
+    float minDistance = float.MaxValue;
+    // List<Node> sp = new List<Node>();
+    int positionOfPath = -1, counter = 0;
+    List<Node>[] pathsToCheck = paths.Where(x => x.Count > 0).ToArray();
+
+    if(pathsToCheck.Length == 0){
+      return new List<Node>();
+    }
+    Debug.Log(string.Format("{0} paths to check", pathsToCheck.Length));
+
+    foreach (List<Node> nodes in pathsToCheck){
+      //node != null &&
+      if(nodes == null) { continue; }
+      List<Node> path = new List<Node>(nodes);
+      if(path.Count > 0){
+        // bool validPath = StrandExistsBetween(pStart, path[0]) && StrandExistsBetween(path[path.Count-1], pEnd);
+        // if(!validPath){ continue; }
+
+        float pathDistance = 0;
+        if(path.Count != 1){
+          for(int i=0; i < path.Count-1; i++){
+            pathDistance += path[i].DistanceFrom(path[i+1]);
+          }
+        } else {
+          Vector3 playerPos = player.transform.position,
+                  destPos = positionToMove;
+          Node pStart = new Node(playerPos.x, playerPos.y),
+               pEnd = new Node(destPos.x, destPos.y);
+
+          pathDistance += path[0].DistanceFrom(pStart);
+          pathDistance += path[path.Count-1].DistanceFrom(pEnd);
+          Debug.Log(string.Format("Path = {0}, Distance = {1}", counter, pathDistance));
+        }
+        if(pathDistance <= minDistance && path.Count > 0){
+          positionOfPath = counter;
+          minDistance = pathDistance;
+          Debug.Log(string.Format("Path{0} is smallest", positionOfPath + 1));
+          // sp = new List<Node>(path);
+        }
+      }
+      counter++;
+    }
+
+    Debug.Log(string.Format("index = {0}", positionOfPath));
+    return pathsToCheck[positionOfPath];
   }
 }

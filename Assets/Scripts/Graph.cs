@@ -16,7 +16,7 @@ class Graph{
 
   public void addVertex(Node name, Dictionary<Node, float> edges){
     vertices[name] = edges;
-    DisplayVertices();
+    // DisplayVertices();
   }
 
   public void ClearGraph(){
@@ -44,11 +44,11 @@ class Graph{
     var previous = new Dictionary<Node, Node>();
     var distances = new Dictionary<Node, float>();
     var nodes = new List<Node>();
-    List<Node> path = null;
+    List<Node> path = new List<Node>();
 
-    Debug.Log("inside Graph.ShortestPath method");
+    // Debug.Log("inside Graph.ShortestPath method");
 
-    DisplayVertices();
+    // DisplayVertices();
     foreach (var vertex in vertices){
       if (vertex.Key.Equals(start)){
         distances[vertex.Key] = 0;
@@ -89,16 +89,16 @@ class Graph{
       // Debug.Log(string.Format("smallest = {0}", smallest.PositionString()));
 
       foreach (var neighbor in vertices[smallest]){
-        Debug.Log(string.Format("Inside neighbor loop"));
+        // Debug.Log(string.Format("Inside neighbor loop"));
         var alt = distances[smallest] + neighbor.Value;
-        Debug.Log(string.Format("alt = {0}", alt));
+        // Debug.Log(string.Format("alt = {0}", alt));
         if (alt < distances[neighbor.Key]){
           distances[neighbor.Key] = alt;
           previous[neighbor.Key] = smallest;
         }
       }
     }
-    Debug.Log(string.Format("path.count = {0}", path.Count));
+    // Debug.Log(string.Format("path.count = {0}", path.Count));
     return path;
   }
 }
