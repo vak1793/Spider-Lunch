@@ -145,6 +145,7 @@ MonoBehaviour:
   windowFrame: {fileID: 1441299745303942, guid: ebbe487f453074d4d8900f9081d77565,
     type: 2}
   spider: {fileID: 1568066846987086, guid: 9f92a634c5ef9455885e624ce71044cc, type: 2}
+  playerMoveSpeed: 17.5
 --- !u!4 &966137839
 Transform:
   m_ObjectHideFlags: 0

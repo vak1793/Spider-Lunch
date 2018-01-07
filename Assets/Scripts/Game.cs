@@ -7,6 +7,7 @@ using UnityEngine;
 public class Game : MonoBehaviour {
 
   public GameObject node, strand, windowFrame, spider;
+  public float playerMoveSpeed;
   GameObject node1 = null, node2 = null, drawnStrand = null;
   GameObject player;
   List<GameObject> intersectNodes, splitStrands;
@@ -23,9 +24,6 @@ public class Game : MonoBehaviour {
   // Use this for initialization
   void Start () {
 
-    // Program p = new Program();
-    // p.main();
-    // return;
     System.Random rnd = new System.Random();
     float spiderStartX, spiderStartY;
     spiderStartX = rnd.Next(-8, 8);
@@ -70,7 +68,6 @@ public class Game : MonoBehaviour {
     player = Instantiate(spider, spiderPos, Quaternion.identity) as GameObject;
     player.name = "Player";
     positionToMove = spiderPos;
-    // Debug.Log("Initialized player, nowhere to move yet");
     playerIsMoving = false;
     newStrandDrawn = true;
     UpdateAdjacencyMatrix();
@@ -278,22 +275,29 @@ public class Game : MonoBehaviour {
       // Debug.Log(string.Format("Player at {0}", player.transform.position.ToString()));
       // Debug.Log(string.Format("Destination = {0}", positionToMove.ToString()));
       // Debug.Log("player is moving");
+      // Vector3 directionVector;
       if(playerMovePath.Count > 0){
         playerIsMoving = true;
         Node nodeToMove = playerMovePath[0];
         nextNode = new Vector3(nodeToMove.xPos(), nodeToMove.yPos(), 0);
-        player.transform.position = Vector3.Lerp(player.transform.position, nextNode, 0.1f);
+        // directionVector = nextNode - player.transform.position;
+        // player.transform.position += Vector3.Normalize(directionVector) * (Time.deltaTime * playerMoveSpeed);
+        // player.transform.position = Vector3.Lerp(player.transform.position, nextNode, 0.1f);
+        player.transform.position = Vector3.MoveTowards(player.transform.position, nextNode, (Time.deltaTime * playerMoveSpeed));
 
-        if((player.transform.position - nextNode).magnitude < 0.15){
+        if((player.transform.position - nextNode).magnitude < 0.2){
           playerMovePath.RemoveAt(0);
         }
         // if(player.transform.position == nextNode){
         //   playerMovePath.RemoveAt(0);
         // }
       } else {
-        player.transform.position = Vector3.Lerp(player.transform.position, positionToMove, 0.1f);
+        player.transform.position = Vector3.MoveTowards(player.transform.position, positionToMove, (Time.deltaTime * playerMoveSpeed));
+        // directionVector = positionToMove - player.transform.position;
+        // player.transform.position += Vector3.Normalize(directionVector) * (Time.deltaTime * playerMoveSpeed);
+        // player.transform.position = Vector3.Lerp(player.transform.position, positionToMove, 0.1f);
 
-        if((player.transform.position - positionToMove).magnitude < 0.15){
+        if((player.transform.position - positionToMove).magnitude < 0.2){
           playerIsMoving = false;
         } else {
           playerIsMoving = true;
@@ -375,7 +379,6 @@ public class Game : MonoBehaviour {
     foreach (Strand s in strandList){
       if(s.ContainsPointWithEnds(pos.x, pos.y)){
         pointOnStrand = true;
-        //Debug.Log(string.Format("Clicked on {0}", s.PositionString()));
         str = s;
       }
     }
@@ -405,7 +408,6 @@ public class Game : MonoBehaviour {
         }
       }
 
-      // Debug.Log("Deleted node at "+toDestroy.PositionString());
       Destroy(node1);
     }
   }
@@ -420,18 +422,8 @@ public class Game : MonoBehaviour {
     float startX, startY, endX, endY;
 
     GameObject strandGO = GameObject.Find(string.Format("Strand{0}", strandIndex - 3));
-    // Debug.Log(string.Format("Splitting Strand{0}", strandIndex - 3));
     Node startN = str.GetStartNode(), endN = str.GetEndNode();
 
-    // string listOfStrandGOs = "Strands currently in game: ";
-    // Debug.Log(string.Format("strandList size = {0}", strandList.Count));
-    // // listOfStrandGOs = "Strands currently in game:";
-    // foreach(GameObject sgo in GameObject.FindGameObjectsWithTag("Edge")){
-    //   listOfStrandGOs += string.Format("{0}, ", sgo.name);
-    // }
-    // Debug.Log(listOfStrandGOs);
-
-    // Debug.Log(string.Format("Removing Strand{0} from strandList", strandIndex - 3));
     strandList.RemoveAt(strandIndex);
     Destroy(strandGO);
     strandGO = null;
@@ -440,13 +432,6 @@ public class Game : MonoBehaviour {
       GameObject go = GameObject.Find(string.Format("Strand{0}", i - 2));
       go.name = string.Format("Strand{0}", i - 3);
     }
-
-    // Debug.Log(string.Format("strandList size = {0}", strandList.Count));
-    // listOfStrandGOs = "Strands currently in game: ";
-    // foreach(GameObject sgo in GameObject.FindGameObjectsWithTag("Edge")){
-    //   listOfStrandGOs += string.Format("{0}, ", sgo.name);
-    // }
-    // Debug.Log(listOfStrandGOs);
 
     startX = startN.xPos();
     startY = startN.yPos();
@@ -495,7 +480,6 @@ public class Game : MonoBehaviour {
       bool strandContainsStartPoint = s.ContainsPointWithEnds(otherStart.xPos(), otherStart.yPos());
       bool strandContainsEndPoint = s.ContainsPointWithEnds(otherEnd.xPos(), otherEnd.yPos());
       bool isReqdStrand = s.Equals(strandToCompare);
-      // Debug.Log("String is between the two nodes");
 
       if(isReqdStrand || (strandContainsStartPoint && strandContainsEndPoint)){
         strandExists = true;
@@ -518,7 +502,6 @@ public class Game : MonoBehaviour {
     for (int i = 0; i < matrixSize - 1; i++) {
       for (int j = i + 1; j < matrixSize; j++) {
         bool validPath = StrandExistsBetween(nodeList[i], nodeList[j]);
-        // Debug.Log(string.Format("Strand between {0} and {1} = {2}", nodeList[i].PositionString(), nodeList[j].PositionString(), validPath));
         if(validPath){
           // multiplying with distance for greedy algorithm
           float dist = nodeList[i].DistanceFrom(nodeList[j]);
@@ -552,12 +535,7 @@ public class Game : MonoBehaviour {
     path3 = new List<Node>();
     path4 = new List<Node>();
 
-    // UpdateAdjacencyMatrix();
     int matrixSize = adjacencyMatrix.GetLength(0);
-    // Debug.Log("Inside CalculatePlayerMovePath");
-    // Debug.Log(string.Format("AdjacencyMatrix size = {0}", matrixSize));
-    // Debug.Log(string.Format("nodeList size = {0}", nodeList.Count));
-    // DisplayAdjacencyMatrix();
 
     Dictionary<Node, Dictionary<Node, float>> vertexList = new Dictionary<Node, Dictionary<Node, float>>();
     Dictionary<Node, float> nodeMap = new Dictionary<Node, float>();
@@ -574,17 +552,9 @@ public class Game : MonoBehaviour {
     if(StrandListContainsPoint(playerStart, out startStrand)
       && StrandListContainsPoint(playerDestination, out endStrand)){
 
-        // startNode = startStrand.GetClosestEnd(playerStart);
-        // endNode = endStrand.GetClosestEnd(playerDestination);
-
         if(startStrand.Equals(endStrand)){
           return;
         }
-
-
-        // Debug.Log(string.Format("startStrand = {0}", startStrand.PositionString()));
-        // Debug.Log(string.Format("endStrand = {0}", endStrand.PositionString()));
-        // startNode = startStrand.GetClosestNodeOnStrand(playerStart, nodeList);
 
         s1 = startStrand.GetStartNode();
         s2 = startStrand.GetEndNode();
@@ -628,29 +598,18 @@ public class Game : MonoBehaviour {
              playerDestinationNode = new Node(playerDestination.x, playerDestination.y);
 
         if(nodeListContainsAt(playerStartNode, out startIndex)){
-          Debug.Log(string.Format("Player position on existing node at {0}", playerStartNode.PositionString()));
+          // Debug.Log(string.Format("Player position on existing node at {0}", playerStartNode.PositionString()));
           s1 = playerStartNode;
           s2 = playerStartNode;
         }
         // end node is always existing!
         if(nodeListContainsAt(playerDestinationNode, out finishIndex)){
-          Debug.Log(string.Format("Destination is existing node at {0}", playerDestinationNode.PositionString()));
+          // Debug.Log(string.Format("Destination is existing node at {0}", playerDestinationNode.PositionString()));
           e1 = playerDestinationNode;
           e2 = playerDestinationNode;
         }
 
-        // Debug.Log(
-        //   string.Format(
-        //     "s1 = {0}, s2 = {1}, e1 = {2}, e2 = {3}",
-        //     s1.PositionString(), s2.PositionString(),
-        //     e1.PositionString(), e2.PositionString()
-        //   )
-        // );
-
         graph = new Graph(vertexList);
-        // graph.DisplayVertices();
-
-        string pathList;
 
         if(nodeListContainsAt(s1, out startIndex) && nodeListContainsAt(e1, out finishIndex)){
           if(s1.Equals(e1)){
@@ -660,12 +619,6 @@ public class Game : MonoBehaviour {
           }
         }
 
-        // pathList = string.Format("{0} nodes in path1: {1} to {2} => ", path1.Count, s1.PositionString(), e1.PositionString());
-        // foreach(var n in path1){
-        //   pathList += string.Format("{0} ", n.PositionString());
-        // }
-        // Debug.Log(pathList);
-
         if(nodeListContainsAt(s1, out startIndex) && nodeListContainsAt(e2, out finishIndex)){
           if(s1.Equals(e2)){
             path2.Add(s1);
@@ -673,12 +626,6 @@ public class Game : MonoBehaviour {
             path2 = graph.ShortestPath(s1, e2);
           }
         }
-
-        // pathList = string.Format("{0} nodes in path2: {1} to {2} => ", path2.Count, s1.PositionString(), e2.PositionString());
-        // foreach(var n in path2){
-        //   pathList += string.Format("{0} ", n.PositionString());
-        // }
-        // Debug.Log(pathList);
 
         if(nodeListContainsAt(s2, out startIndex) && nodeListContainsAt(e1, out finishIndex)){
           if(s2.Equals(e1)){
@@ -688,12 +635,6 @@ public class Game : MonoBehaviour {
           }
         }
 
-        // pathList = string.Format("{0} nodes in path3: {1} to {2} => ", path3.Count, s2.PositionString(), e1.PositionString());
-        // foreach(var n in path3){
-        //   pathList += string.Format("{0} ", n.PositionString());
-        // }
-        // Debug.Log(pathList);
-
         if(nodeListContainsAt(s2, out startIndex) && nodeListContainsAt(e2, out finishIndex)){
           if(s2.Equals(e2)){
             path4.Add(s2);
@@ -702,37 +643,18 @@ public class Game : MonoBehaviour {
           }
         }
 
-        // pathList = string.Format("{0} nodes in path4 {1} to {2} => ", path4.Count, s2.PositionString(), e2.PositionString());
-        // foreach(var n in path4){
-        //   pathList += string.Format("{0} ", n.PositionString());
-        // }
-        // Debug.Log(pathList);
-
         List<Node>[] paths = new List<Node>[] { path1, path2, path3, path4 };
-        // if(path1 != null && path1.Count > 0) { paths.Add(path1); }
-        // if(path2 != null && path2.Count > 0) { paths.Add(path2); }
-        // if(path3 != null && path3.Count > 0) { paths.Add(path3); }
-        // if(path4 != null && path4.Count > 0) { paths.Add(path4); }
-
-
-        // Debug.Log(string.Format("Player move path has {0} nodes", playerMovePath.Count));
-
-        // int pathIndex = ShortestDistance(paths);
-        // if(pathIndex > -1){
-        //   string pointsToTraverse = "Nodes at ";
-        //   foreach(var selectedNode in paths[pathIndex]){
-        //     pointsToTraverse += string.Format("{0}, ", selectedNode.PositionString());
-        //   }
-        //   Debug.Log(pointsToTraverse);
-        //   playerMovePath = paths[pathIndex];
-        // }
         playerMovePath = ShortestDistance(paths);
 
-        string playerpathlist = string.Format("{0} nodes in playerMovePath: ", playerMovePath.Count);
-        foreach(var n in playerMovePath){
-          playerpathlist += string.Format("{0} ", n.PositionString());
-        }
-        Debug.Log(playerpathlist);
+        // string pathlist = "";
+        // foreach(var moveNode in playerMovePath){
+        //   if(playerMovePath.FindIndex(a => a.Equals(moveNode)) == playerMovePath.Count-1){
+        //     pathlist += string.Format("{0}", moveNode.PositionString());
+        //   } else {
+        //     pathlist += string.Format("{0} => ", moveNode.PositionString());
+        //   }
+        // }
+        // Debug.Log(pathlist);
     }
   }
 
@@ -765,51 +687,34 @@ public class Game : MonoBehaviour {
 
   List<Node> ShortestDistance(List<Node>[] paths){
     float minDistance = float.MaxValue;
-    // List<Node> sp = new List<Node>();
     int positionOfPath = -1, counter = 0;
     List<Node>[] pathsToCheck = paths.Where(x => x.Count > 0).ToArray();
 
     if(pathsToCheck.Length == 0){
       return new List<Node>();
     }
-    Debug.Log(string.Format("{0} paths to check", pathsToCheck.Length));
 
     foreach (List<Node> nodes in pathsToCheck){
-      //node != null &&
       if(nodes == null) { continue; }
       List<Node> path = new List<Node>(nodes);
       if(path.Count > 0){
-        // bool validPath = StrandExistsBetween(pStart, path[0]) && StrandExistsBetween(path[path.Count-1], pEnd);
-        // if(!validPath){ continue; }
-
         float pathDistance = 0;
-        // if(path.Count != 1){
-        //
-        // } else {
-          Vector3 playerPos = player.transform.position,
-                  destPos = positionToMove;
-          Node pStart = new Node(playerPos.x, playerPos.y),
-               pEnd = new Node(destPos.x, destPos.y);
+        Vector3 playerPos = player.transform.position, destPos = positionToMove;
+        Node pStart = new Node(playerPos.x, playerPos.y), pEnd = new Node(destPos.x, destPos.y);
+        for(int i=0; i < path.Count-1; i++){
+         pathDistance += path[i].DistanceFrom(path[i+1]);
+        }
+        pathDistance += path[0].DistanceFrom(pStart);
+        pathDistance += path[path.Count-1].DistanceFrom(pEnd);
 
-
-          for(int i=0; i < path.Count-1; i++){
-           pathDistance += path[i].DistanceFrom(path[i+1]);
-          }
-          pathDistance += path[0].DistanceFrom(pStart);
-          pathDistance += path[path.Count-1].DistanceFrom(pEnd);
-          Debug.Log(string.Format("Path = {0}, Distance = {1}", counter, pathDistance));
-        // }
         if(pathDistance <= minDistance && path.Count > 0){
           positionOfPath = counter;
           minDistance = pathDistance;
-          Debug.Log(string.Format("Path{0} is smallest", positionOfPath + 1));
-          // sp = new List<Node>(path);
         }
       }
       counter++;
     }
 
-    Debug.Log(string.Format("index = {0}", positionOfPath));
     return pathsToCheck[positionOfPath];
   }
 }
