@@ -7,10 +7,11 @@ using UnityEngine;
 public class Game : MonoBehaviour {
 
   public GameObject node, strand, windowFrame, spider;
+  public GameObject smallInsect;//, mediumInsect, largeInsect;
   public float playerMoveSpeed;
   GameObject node1 = null, node2 = null, drawnStrand = null;
   GameObject player;
-  List<GameObject> intersectNodes, splitStrands;
+  List<GameObject> intersectNodes, splitStrands, insectList;
   Plane plane;
   GameObject startNode, endNode;
   bool playerIsMoving, newStrandDrawn, drawnStrandIsSplit, existingNode = false;
@@ -74,6 +75,8 @@ public class Game : MonoBehaviour {
 
     graph = new Graph();
     plane = new Plane(Vector3.back, GameObject.FindGameObjectWithTag("GameController").transform.position);
+
+    InvokeRepeating("CreateInsect", 3.0f, 3f);
   }
 
   // Update is called once per frame
@@ -329,6 +332,11 @@ public class Game : MonoBehaviour {
       foreach (GameObject go in intersectNodes) {
         go.GetComponent<Renderer>().enabled = true;
       }
+
+      // Vector3 insectSpawnPos = (node1.transform.position + node2.transform.position) / 2f;
+      // insectSpawnPos[2] = -11;
+      //
+      // Instantiate(smallInsect, insectSpawnPos, Quaternion.identity);
       UpdateAdjacencyMatrix();
       // DisplayAdjacencyMatrix();
       newStrandDrawn = true;
@@ -716,5 +724,17 @@ public class Game : MonoBehaviour {
     }
 
     return pathsToCheck[positionOfPath];
+  }
+
+  void CreateInsect(){
+    float x, y;
+
+    System.Random rnd = new System.Random();
+    x = rnd.Next(-7, 7);
+    y = rnd.Next(-7, 7);
+
+    Vector3 initPos = new Vector3(x, y, -11);
+
+    Instantiate(smallInsect, initPos, Quaternion.identity);
   }
 }
