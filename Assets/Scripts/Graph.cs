@@ -30,9 +30,9 @@ class Graph{
       string edges = "[";
       i = 1;
       foreach (var edge in vertex.Value) {
-        edges += string.Format("{0}, ", i);
+        // edges += string.Format("{0}, ", i);
+        edges += string.Format("{0}: {1}, ", edge.Key.PositionString(), edge.Value);
         i++;
-        // edges += string.Format("{0}: {1},", edge.Key.PositionString(), edge.Value);
       }
       edges += "]";
       output += string.Format("Vertex: {0}, Edges: {1}\n", vertex.Key.PositionString(), edges);
@@ -44,7 +44,7 @@ class Graph{
     var previous = new Dictionary<Node, Node>();
     var distances = new Dictionary<Node, float>();
     var nodes = new List<Node>();
-    List<Node> path = new List<Node>();
+    List<Node> path = null;//new List<Node>();
 
     // Debug.Log("inside Graph.ShortestPath method");
 
@@ -63,11 +63,26 @@ class Graph{
     //   Debug.Log(string.Format("{0}, node position = {1}", key, key.PositionString()));
     // }
 
-    while(nodes.Count != 0){
-      nodes.Sort((x, y) => (int)(distances[x] - distances[y]));
+    while(nodes.Count > 0){
+      // nodes.Sort((x, y) => distances[x] - distances[y]);
 
-      var smallest = nodes[0];
-      nodes.RemoveAt(0);
+      // nodeString += "\nAfter sort: ";
+      // foreach(var n in nodes){
+      //   nodeString += string.Format("{0} => {1}, ", n.PositionString(), distances[n]);
+      // }
+      // Debug.Log(nodeString);
+      int minNodePos = -1;
+      float minNodeVal = float.MaxValue;
+      for(int i = 0; i < nodes.Count; i++){
+        if(distances[nodes[i]] < minNodeVal){
+          minNodeVal = distances[nodes[i]];
+          minNodePos = i;
+        }
+      }
+
+      var smallest = nodes[minNodePos];
+      // Debug.Log(string.Format("Smallest = {0}", smallest.PositionString()));
+      nodes.RemoveAt(minNodePos);
       if(smallest.Equals(finish)){
         // Debug.Log("Initialized path");
         path = new List<Node>();
@@ -75,8 +90,16 @@ class Graph{
           path.Add(smallest);
           smallest = previous[smallest];
         }
+        path.Add(start);
+        path.Reverse();
 
-        continue;
+        // string pathString = "nodes to traverse = ";
+        // foreach (Node fn in path) {
+        //   pathString += string.Format("{0} -> ", fn.PositionString());
+        // }
+        // Debug.Log(pathString);
+
+        break;
       }
       // Debug.Log(string.Format("{0} != {1}", smallest.PositionString(), finish.PositionString()));
 
@@ -93,12 +116,28 @@ class Graph{
         var alt = distances[smallest] + neighbor.Value;
         // Debug.Log(string.Format("alt = {0}", alt));
         if (alt < distances[neighbor.Key]){
+          // Debug.Log(string.Format("Reassigning distance of {0} to {1}", neighbor.Key.PositionString(), alt));
           distances[neighbor.Key] = alt;
           previous[neighbor.Key] = smallest;
         }
       }
+
+      // string debugString = "";
+      // foreach(var d in distances){
+      //   debugString += string.Format("Node: {0}, Distance: {1}\n", d.Key.PositionString(), d.Value);
+      // }
+      // debugString += "\n";
+      // foreach(var p in previous){
+      //   debugString += string.Format("Node: {0}, Previous: {1}\n", p.Key.PositionString(), p.Value.PositionString());
+      // }
+      // debugString += "\n";
+      // foreach(var n in nodes){
+      //   debugString += string.Format("{0}, ", n.PositionString());
+      // }
+      // Debug.Log(debugString);
     }
     // Debug.Log(string.Format("path.count = {0}", path.Count));
-    return path;
+
+    return new List<Node>(path);
   }
 }

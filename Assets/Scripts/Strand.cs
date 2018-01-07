@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 public class Strand {
   Node startNode, endNode;
@@ -120,6 +121,58 @@ public class Strand {
     return true;
   }
 
+  public bool ContainsPointWithEnds(float x, float y) {
+    float x1, y1, x2, y2, deltaX, deltaY, distFromLine;
+
+    x1 = startNode.xPos();
+    y1 = startNode.yPos();
+    x2 = endNode.xPos();
+    y2 = endNode.yPos();
+    deltaX = x2 - x1;
+    deltaY = y2 - y1;
+
+    bool withinXBounds = false, withinYBounds = false;
+
+    if(x2 > x1){
+      if(x >= x1 && x <= x2){
+        withinXBounds = true;
+      }
+    } else if(x2 < x1){
+      if(x <= x1 && x >= x2){
+        withinXBounds = true;
+      }
+    } else {
+      if(Mathf.Abs(x - x1) < 0.1){
+        withinXBounds = true;
+      }
+    }
+
+    if(y2 > y1){
+      if(y >= y1 && y <= y2){
+        withinYBounds = true;
+      }
+    } else if(y2 < y1){
+      if(y <= y1 && y >= y2){
+        withinYBounds = true;
+      }
+    } else {
+      if(Mathf.Abs(y - y1) < 0.1){
+        withinYBounds = true;
+      }
+    }
+
+    if(!withinXBounds || !withinYBounds){
+      return false;
+    }
+
+    distFromLine = Mathf.Abs((deltaY * x) - (deltaX * y) + (x2 * y1) - (x1 * y2))/StrandLength();
+    if(distFromLine > 0.1) {
+      // Debug.Log(string.Format("({0},{1}) is {2} units away", x, y, distFromLine));
+      return false;
+    }
+    return true;
+  }
+
   public Vector3 ClosestPoint(Vector3 pos){
     float[] pt = new float[2];
     float x = pos.x, y = pos.y;
@@ -183,5 +236,22 @@ public class Strand {
 
     closestNode = (startDist <= endDist) ? startNode : endNode;
     return closestNode;
+  }
+
+  public Node GetClosestNodeOnStrand(Vector3 pt, List<Node> nl){
+    float minDistance = float.MaxValue;
+    Node reqdNode = new Node(float.MaxValue, float.MaxValue), ptNode = new Node(pt.x, pt.y);
+
+    foreach(Node n in nl){
+      // Skip strand start and end
+      if(n.Equals(this.startNode) || n.Equals(this.endNode)) { continue; }
+
+      float d = n.DistanceFrom(ptNode);
+      if(ContainsPoint(n.xPos(), n.yPos()) && d < minDistance){
+        minDistance = d;
+        reqdNode = n;
+      }
+    }
+    return reqdNode;
   }
 }

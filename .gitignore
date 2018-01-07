@@ -1,4 +1,6 @@
 .vs/*
+.DS_Store
+*.meta
 */*.DS_Store
 */*.meta
 Library/*
@@ -9,5 +11,8 @@ Spider Lunch.sln
 /UnityPackageManager/*
 Assembly-CSharp.csproj
 Spider-Lunch.sln
+Spider-Lunch.userprefs
 Spider_lunch.sln
 Spider_lunch.userprefs
+obj/
+

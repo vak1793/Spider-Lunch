@@ -22,6 +22,10 @@ public class Game : MonoBehaviour {
 
   // Use this for initialization
   void Start () {
+
+    // Program p = new Program();
+    // p.main();
+    // return;
     System.Random rnd = new System.Random();
     float spiderStartX, spiderStartY;
     spiderStartX = rnd.Next(-8, 8);
@@ -77,6 +81,7 @@ public class Game : MonoBehaviour {
 
   // Update is called once per frame
   void Update () {
+    // return;
     Vector3 mPos;
     Ray ray;
     float ray_distance;
@@ -119,8 +124,8 @@ public class Game : MonoBehaviour {
 
           // node1.SetActive(false);
           node1.GetComponent<Renderer>().enabled = false;
-          Node newNode = new Node(pos.x, pos.y);
-          nodeList.Add(newNode);
+          // Node newNode = new Node(pos.x, pos.y);
+          // nodeList.Add(newNode);
           existingNode = false;
           // Debug.Log("Created new node at: " + newNode.PositionString());
         }
@@ -147,6 +152,7 @@ public class Game : MonoBehaviour {
             Strand clickedStrand = null;
             bool clickedOnExistingStrand = StrandListContainsPoint(mPos, out clickedStrand);
             if(clickedOnExistingStrand) {
+              nodeList.Add(new Node(node1.transform.position.x, node1.transform.position.y));
               bool clickedOnExistingNode = GetOverlappingObjects(out node2, "Vertex", mPos, 0.1f);
               if(!clickedOnExistingNode) {
                 endStrand = clickedStrand;
@@ -276,7 +282,7 @@ public class Game : MonoBehaviour {
         playerIsMoving = true;
         Node nodeToMove = playerMovePath[0];
         nextNode = new Vector3(nodeToMove.xPos(), nodeToMove.yPos(), 0);
-        player.transform.position = Vector3.Lerp(player.transform.position, nextNode, 0.075f);
+        player.transform.position = Vector3.Lerp(player.transform.position, nextNode, 0.1f);
 
         if((player.transform.position - nextNode).magnitude < 0.15){
           playerMovePath.RemoveAt(0);
@@ -285,7 +291,7 @@ public class Game : MonoBehaviour {
         //   playerMovePath.RemoveAt(0);
         // }
       } else {
-        player.transform.position = Vector3.Lerp(player.transform.position, positionToMove, 0.075f);
+        player.transform.position = Vector3.Lerp(player.transform.position, positionToMove, 0.1f);
 
         if((player.transform.position - positionToMove).magnitude < 0.15){
           playerIsMoving = false;
@@ -367,7 +373,7 @@ public class Game : MonoBehaviour {
     bool pointOnStrand = false;
     str = null;
     foreach (Strand s in strandList){
-      if(s.ContainsPoint(pos.x, pos.y)){
+      if(s.ContainsPointWithEnds(pos.x, pos.y)){
         pointOnStrand = true;
         //Debug.Log(string.Format("Clicked on {0}", s.PositionString()));
         str = s;
@@ -486,9 +492,10 @@ public class Game : MonoBehaviour {
     bool strandExists = false;
 
     foreach(Strand s in strandList) {
-      bool strandContainsStartPoint = s.ContainsPoint(otherStart.xPos(), otherStart.yPos());
-      bool strandContainsEndPoint = s.ContainsPoint(otherEnd.xPos(), otherEnd.yPos());
+      bool strandContainsStartPoint = s.ContainsPointWithEnds(otherStart.xPos(), otherStart.yPos());
+      bool strandContainsEndPoint = s.ContainsPointWithEnds(otherEnd.xPos(), otherEnd.yPos());
       bool isReqdStrand = s.Equals(strandToCompare);
+      // Debug.Log("String is between the two nodes");
 
       if(isReqdStrand || (strandContainsStartPoint && strandContainsEndPoint)){
         strandExists = true;
@@ -510,7 +517,9 @@ public class Game : MonoBehaviour {
 
     for (int i = 0; i < matrixSize - 1; i++) {
       for (int j = i + 1; j < matrixSize; j++) {
-        if(StrandExistsBetween(nodeList[i], nodeList[j])){
+        bool validPath = StrandExistsBetween(nodeList[i], nodeList[j]);
+        // Debug.Log(string.Format("Strand between {0} and {1} = {2}", nodeList[i].PositionString(), nodeList[j].PositionString(), validPath));
+        if(validPath){
           // multiplying with distance for greedy algorithm
           float dist = nodeList[i].DistanceFrom(nodeList[j]);
           adjacencyMatrix[i, j] = dist;
@@ -543,7 +552,7 @@ public class Game : MonoBehaviour {
     path3 = new List<Node>();
     path4 = new List<Node>();
 
-    UpdateAdjacencyMatrix();
+    // UpdateAdjacencyMatrix();
     int matrixSize = adjacencyMatrix.GetLength(0);
     // Debug.Log("Inside CalculatePlayerMovePath");
     // Debug.Log(string.Format("AdjacencyMatrix size = {0}", matrixSize));
@@ -552,8 +561,8 @@ public class Game : MonoBehaviour {
 
     Dictionary<Node, Dictionary<Node, float>> vertexList = new Dictionary<Node, Dictionary<Node, float>>();
     Dictionary<Node, float> nodeMap = new Dictionary<Node, float>();
-    for(int i = 0; i < matrixSize - 1; i++){
-      for(int j = 0; j < matrixSize - 1; j++){
+    for(int i = 0; i < matrixSize; i++){
+      for(int j = 0; j < matrixSize; j++){
         if(adjacencyMatrix[i,j] > 0){
           nodeMap.Add(nodeList[j], adjacencyMatrix[i,j]);
         }
@@ -571,13 +580,49 @@ public class Game : MonoBehaviour {
         if(startStrand.Equals(endStrand)){
           return;
         }
-        Debug.Log(string.Format("startStrand = {0}", startStrand.PositionString()));
-        Debug.Log(string.Format("endStrand = {0}", endStrand.PositionString()));
+
+
+        // Debug.Log(string.Format("startStrand = {0}", startStrand.PositionString()));
+        // Debug.Log(string.Format("endStrand = {0}", endStrand.PositionString()));
+        // startNode = startStrand.GetClosestNodeOnStrand(playerStart, nodeList);
 
         s1 = startStrand.GetStartNode();
         s2 = startStrand.GetEndNode();
-        e1 = startStrand.GetStartNode();
-        e2 = startStrand.GetEndNode();
+        e1 = endStrand.GetStartNode();
+        e2 = endStrand.GetEndNode();
+
+        bool startOnFrame, endOnFrame, startStrandIsFrame = false, endStrandIsFrame = false;
+
+        for(int i = 0; i < 4; i++){
+          startOnFrame = strandList[i].ContainsPointWithEnds(s1.xPos(), s1.yPos());
+          endOnFrame = strandList[i].ContainsPointWithEnds(s2.xPos(), s2.yPos());
+          if(startOnFrame && endOnFrame){
+            startStrandIsFrame = true;
+          }
+          startOnFrame = strandList[i].ContainsPointWithEnds(e1.xPos(), e1.yPos());
+          endOnFrame = strandList[i].ContainsPointWithEnds(e2.xPos(), e2.yPos());
+          if(startOnFrame && endOnFrame){
+            endStrandIsFrame = true;
+          }
+        }
+
+        Node temp;
+        if(startStrandIsFrame && nodeList.Count > 4){
+          // Debug.Log("start is frame");
+          temp = startStrand.GetClosestNodeOnStrand(playerStart, nodeList);
+          if(temp.xPos() != float.MaxValue && temp.yPos() != float.MaxValue){
+            s1 = temp;
+            s2 = startStrand.GetClosestEnd(playerStart);
+          }
+        }
+        if(endStrandIsFrame && nodeList.Count > 4){
+          // Debug.Log("end is frame");
+          temp = endStrand.GetClosestNodeOnStrand(playerDestination, nodeList);
+          if(temp.xPos() != float.MaxValue && temp.yPos() != float.MaxValue){
+            e1 = temp;
+            e2 = endStrand.GetClosestEnd(playerDestination);
+          }
+        }
 
         Node playerStartNode = new Node(playerStart.x, playerStart.y),
              playerDestinationNode = new Node(playerDestination.x, playerDestination.y);
@@ -587,13 +632,23 @@ public class Game : MonoBehaviour {
           s1 = playerStartNode;
           s2 = playerStartNode;
         }
-        // if(nodeListContainsAt(playerDestinationNode, out finishIndex)){
-        //   Debug.Log(string.Format("Destination is existing node at {0}", playerDestinationNode.PositionString()));
-        //   e1 = playerDestinationNode;
-        //   e2 = playerDestinationNode;
-        // }
+        // end node is always existing!
+        if(nodeListContainsAt(playerDestinationNode, out finishIndex)){
+          Debug.Log(string.Format("Destination is existing node at {0}", playerDestinationNode.PositionString()));
+          e1 = playerDestinationNode;
+          e2 = playerDestinationNode;
+        }
+
+        // Debug.Log(
+        //   string.Format(
+        //     "s1 = {0}, s2 = {1}, e1 = {2}, e2 = {3}",
+        //     s1.PositionString(), s2.PositionString(),
+        //     e1.PositionString(), e2.PositionString()
+        //   )
+        // );
 
         graph = new Graph(vertexList);
+        // graph.DisplayVertices();
 
         string pathList;
 
@@ -605,11 +660,11 @@ public class Game : MonoBehaviour {
           }
         }
 
-        pathList = string.Format("{0} nodes in path1: {1} to {2} => ", path1.Count, s1.PositionString(), e1.PositionString());
-        foreach(var n in path1){
-          pathList += string.Format("{0} ", n.PositionString());
-        }
-        Debug.Log(pathList);
+        // pathList = string.Format("{0} nodes in path1: {1} to {2} => ", path1.Count, s1.PositionString(), e1.PositionString());
+        // foreach(var n in path1){
+        //   pathList += string.Format("{0} ", n.PositionString());
+        // }
+        // Debug.Log(pathList);
 
         if(nodeListContainsAt(s1, out startIndex) && nodeListContainsAt(e2, out finishIndex)){
           if(s1.Equals(e2)){
@@ -619,11 +674,11 @@ public class Game : MonoBehaviour {
           }
         }
 
-        pathList = string.Format("{0} nodes in path2: {1} to {2} => ", path2.Count, s1.PositionString(), e2.PositionString());
-        foreach(var n in path2){
-          pathList += string.Format("{0} ", n.PositionString());
-        }
-        Debug.Log(pathList);
+        // pathList = string.Format("{0} nodes in path2: {1} to {2} => ", path2.Count, s1.PositionString(), e2.PositionString());
+        // foreach(var n in path2){
+        //   pathList += string.Format("{0} ", n.PositionString());
+        // }
+        // Debug.Log(pathList);
 
         if(nodeListContainsAt(s2, out startIndex) && nodeListContainsAt(e1, out finishIndex)){
           if(s2.Equals(e1)){
@@ -633,11 +688,11 @@ public class Game : MonoBehaviour {
           }
         }
 
-        pathList = string.Format("{0} nodes in path3: {1} to {2} => ", path3.Count, s2.PositionString(), e1.PositionString());
-        foreach(var n in path3){
-          pathList += string.Format("{0} ", n.PositionString());
-        }
-        Debug.Log(pathList);
+        // pathList = string.Format("{0} nodes in path3: {1} to {2} => ", path3.Count, s2.PositionString(), e1.PositionString());
+        // foreach(var n in path3){
+        //   pathList += string.Format("{0} ", n.PositionString());
+        // }
+        // Debug.Log(pathList);
 
         if(nodeListContainsAt(s2, out startIndex) && nodeListContainsAt(e2, out finishIndex)){
           if(s2.Equals(e2)){
@@ -647,11 +702,11 @@ public class Game : MonoBehaviour {
           }
         }
 
-        pathList = string.Format("{0} nodes in path4 {1} to {2} => ", path4.Count, s2.PositionString(), e2.PositionString());
-        foreach(var n in path4){
-          pathList += string.Format("{0} ", n.PositionString());
-        }
-        Debug.Log(pathList);
+        // pathList = string.Format("{0} nodes in path4 {1} to {2} => ", path4.Count, s2.PositionString(), e2.PositionString());
+        // foreach(var n in path4){
+        //   pathList += string.Format("{0} ", n.PositionString());
+        // }
+        // Debug.Log(pathList);
 
         List<Node>[] paths = new List<Node>[] { path1, path2, path3, path4 };
         // if(path1 != null && path1.Count > 0) { paths.Add(path1); }
@@ -660,7 +715,8 @@ public class Game : MonoBehaviour {
         // if(path4 != null && path4.Count > 0) { paths.Add(path4); }
 
 
-        Debug.Log(string.Format("Player move path has {0} nodes", playerMovePath.Count));
+        // Debug.Log(string.Format("Player move path has {0} nodes", playerMovePath.Count));
+
         // int pathIndex = ShortestDistance(paths);
         // if(pathIndex > -1){
         //   string pointsToTraverse = "Nodes at ";
@@ -727,20 +783,22 @@ public class Game : MonoBehaviour {
         // if(!validPath){ continue; }
 
         float pathDistance = 0;
-        if(path.Count != 1){
-          for(int i=0; i < path.Count-1; i++){
-            pathDistance += path[i].DistanceFrom(path[i+1]);
-          }
-        } else {
+        // if(path.Count != 1){
+        //
+        // } else {
           Vector3 playerPos = player.transform.position,
                   destPos = positionToMove;
           Node pStart = new Node(playerPos.x, playerPos.y),
                pEnd = new Node(destPos.x, destPos.y);
 
+
+          for(int i=0; i < path.Count-1; i++){
+           pathDistance += path[i].DistanceFrom(path[i+1]);
+          }
           pathDistance += path[0].DistanceFrom(pStart);
           pathDistance += path[path.Count-1].DistanceFrom(pEnd);
           Debug.Log(string.Format("Path = {0}, Distance = {1}", counter, pathDistance));
-        }
+        // }
         if(pathDistance <= minDistance && path.Count > 0){
           positionOfPath = counter;
           minDistance = pathDistance;
