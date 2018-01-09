@@ -24,7 +24,8 @@ public class Insect : MonoBehaviour {
 			// 	GetComponent<Renderer>().enabled = true;
 			// }
 			if(transform.position.z > 0){
-				float newScale = 1 - (transform.position.z / 30);
+				float newScale = 1 - (transform.position.z / 18.75f);
+				// Debug.Log(string.Format("newScale = {0}", newScale));
 				transform.localScale = new Vector3(newScale, newScale, 1);
 			} else {
 				float newScale = 1 - (4 * transform.position.z / 11);
@@ -41,7 +42,7 @@ public class Insect : MonoBehaviour {
 	void OnTriggerStay2D(){
 		// insect gets stuck on strand
 		if(Mathf.Abs(transform.position.z) < 0.2 && !hasGottenStuck){
-			Collider2D[] colliders = Physics2D.OverlapCircleAll(transform.position, 0.3f);
+			Collider2D[] colliders = Physics2D.OverlapCircleAll(transform.position, 0.2f);
 
 			GameObject go;
 
@@ -50,6 +51,7 @@ public class Insect : MonoBehaviour {
 	        go = collider.gameObject;
 	        if(go == gameObject) continue;
 	        if(go.tag == "Edge") {
+						// Debug.Log(string.Format("{0} hit {1}", gameObject.name, go.name));
 	          isStuck = true;
 						hasGottenStuck = true;
 						Invoke("ReleaseInsect", breakOutTime);

@@ -24,7 +24,7 @@ public class Game : MonoBehaviour {
 
   // Use this for initialization
   void Start () {
-
+    return;
     System.Random rnd = new System.Random();
     float spiderStartX, spiderStartY;
     spiderStartX = rnd.Next(-8, 8);
@@ -81,7 +81,7 @@ public class Game : MonoBehaviour {
 
   // Update is called once per frame
   void Update () {
-    // return;
+    return;
     Vector3 mPos;
     Ray ray;
     float ray_distance;
