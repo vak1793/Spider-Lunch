@@ -94,13 +94,15 @@ public class Spider : MonoBehaviour {
 				} else {
 					// else draw web from current position along direction of click
 					Vector3 finish = web.LineIntersectsWindowframeAt(transform.position, mousePosition); //mousePosition - transform.position;
-					web.nameTBD(transform.position, finish);
-					Debug.Log("back in spider script");
-					string debugString = "";
-					foreach (var g in GameObject.FindGameObjectsWithTag("Edge")) {
-						debugString += string.Format("{0}, ", g.name);
+					if(finish.magnitude != 0){
+						web.nameTBD(transform.position, finish);
 					}
-					Debug.Log(debugString);
+					// Debug.Log("back in spider script");
+					// string debugString = "";
+					// foreach (var g in GameObject.FindGameObjectsWithTag("Edge")) {
+					// 	debugString += string.Format("{0}, ", g.name);
+					// }
+					// Debug.Log(debugString);
 					// web.ShowStrandList();
 				}
 			}

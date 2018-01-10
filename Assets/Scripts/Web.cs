@@ -490,36 +490,36 @@ public class Web : MonoBehaviour {
     // float startX, startY, endX, endY;
 
     GameObject strandGO = GameObject.Find(string.Format("Strand{0}", strandIndex - 3));
-		Debug.Log(string.Format("Found {0}", strandGO.name));
+		// Debug.Log(string.Format("Found {0}", strandGO.name));
 		strandGO.name = "Delete_Me";
     Node startN = str.GetStartNode(), endN = str.GetEndNode();
 
-		string debugString = "Before delete\n";
-		foreach (var g in GameObject.FindGameObjectsWithTag("Edge")) {
-			debugString += string.Format("{0}, ", g.name);
-		}
-		Debug.Log(debugString);
+		// string debugString = "Before delete\n";
+		// foreach (var g in GameObject.FindGameObjectsWithTag("Edge")) {
+		// 	debugString += string.Format("{0}, ", g.name);
+		// }
+		// Debug.Log(debugString);
 
     strandList.RemoveAt(strandIndex);
-    Destroy(strandGO);
+    UnityEngine.Object.Destroy(strandGO);
     strandGO = null;
 
-		debugString = "After delete\n";
-		foreach (var g in GameObject.FindGameObjectsWithTag("Edge")) {
-			debugString += string.Format("{0}, ", g.name);
-		}
-		Debug.Log(debugString);
+		// debugString = "After delete\n";
+		// foreach (var g in GameObject.FindGameObjectsWithTag("Edge")) {
+		// 	debugString += string.Format("{0}, ", g.name);
+		// }
+		// Debug.Log(debugString);
 
     for(int i = strandIndex; i < strandList.Count; i++){
       GameObject go = GameObject.Find(string.Format("Strand{0}", i - 2));
       go.name = string.Format("Strand{0}", i - 3);
     }
 
-		debugString = "After Rename\n";
-		foreach (var g in GameObject.FindGameObjectsWithTag("Edge")) {
-			debugString += string.Format("{0}, ", g.name);
-		}
-		Debug.Log(debugString);
+		// debugString = "After Rename\n";
+		// foreach (var g in GameObject.FindGameObjectsWithTag("Edge")) {
+		// 	debugString += string.Format("{0}, ", g.name);
+		// }
+		// Debug.Log(debugString);
 
 		// GameObject[] renamedStrands = GameObject.FindGameObjectsWithTag("Edge");
 		// foreach(GameObject rgo in renamedStrands){
