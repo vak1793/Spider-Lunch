@@ -5,7 +5,7 @@ using UnityEngine;
 
 public class Web : MonoBehaviour {
 
-	public GameObject nodePrefab, strandPrefab;
+	public GameObject nodePrefab, strandPrefab, insect;
 
 	List<Node> nodeList;
 	List<Strand> strandList;
@@ -53,6 +53,12 @@ public class Web : MonoBehaviour {
 
 	}
 
+	public void setPrefabs(GameObject otherNode, GameObject otherStrand, GameObject otherInsect){
+		nodePrefab = otherNode;
+		strandPrefab = otherStrand;
+		insect = otherInsect;
+	}
+
 	public void nameTBD(Vector3 begin, Vector3 finish) {
 		drawnStrand = drawStrandBetween(begin, finish, true);
 
@@ -77,7 +83,7 @@ public class Web : MonoBehaviour {
 		bool existingStartNodeCopy = existingStartNode, existingEndNodeCopy =  existingEndNode;
 
 		Vector3 intersectPt = Vector3.zero;
-		bool drawnStrandIsSplit = false;
+		// bool drawnStrandIsSplit = false;
 		for(int i = strandList.Count-1; i >= 0; i--) {
 			Strand str = strandList[i];
 			// Skipping self
@@ -100,7 +106,7 @@ public class Web : MonoBehaviour {
 		}
 
 		if(intersectNodes.Count > 0){
-			drawnStrandIsSplit = true;
+			// drawnStrandIsSplit = true;
 			Node[] iNodes = new Node[intersectNodes.Count];
 			// Debug.Log(string.Format("{0} intersection points", iNodes.Length));
 			for(int j = 0; j < intersectNodes.Count; j++){
@@ -212,9 +218,30 @@ public class Web : MonoBehaviour {
 		return result;
 	}
 
-	public bool PointIsOnFrame(Vector3 point) {
+	public bool PointIsOnFrame(Vector3 point, out Strand strand) {
 		bool onFrame = false;
-		if(point.x == 8 || point.y == 8 || point.x == -8 || point.y == -8){
+		strand = new Strand(new Node(0,0), new Node(0,0));
+
+		bool onTop = Mathf.Abs(8 - point.y) < 0.5;
+		bool onBottom = Mathf.Abs(-8 - point.y) < 0.5;
+		bool OnLeft = Mathf.Abs(-8 - point.x) < 0.5;
+		bool onRight = Mathf.Abs(8 - point.x) < 0.5;
+
+		if(onTop){
+			strand = new Strand(new Node(-8,8), new Node(8,8));
+			// Debug.Log("Top");
+			onFrame = true;
+		} else if(onBottom){
+			strand = new Strand(new Node(-8,-8), new Node(8,-8));
+			// Debug.Log("Bottom");
+			onFrame = true;
+		} else if(OnLeft){
+			strand = new Strand(new Node(-8,-8), new Node(-8,8));
+			// Debug.Log("Left");
+			onFrame = true;
+		} else if(onRight){
+			strand = new Strand(new Node(8,-8), new Node(8,8));
+			// Debug.Log("Right");
 			onFrame = true;
 		}
 		return onFrame;
@@ -556,5 +583,29 @@ public class Web : MonoBehaviour {
       debugString += string.Format("{0}\n", s.PositionString());
     }
 		Debug.Log(debugString);
+  }
+
+	public void CreateInsect(){
+    float x = float.MaxValue, y = float.MaxValue;
+
+    // System.Random rnd = new System.Random();
+		Strand randomStrand;
+
+		if(strandList.Count >= 5){
+			int index = (int) UnityEngine.Random.Range(4, strandList.Count - 1);
+			randomStrand = strandList[index];
+			Node start = randomStrand.GetStartNode(), end = randomStrand.GetEndNode();
+
+			x = UnityEngine.Random.Range(start.xPos(), end.xPos());
+			y = (x * randomStrand.getLineM()) + randomStrand.getLineC();
+		}
+    // x = rnd.Next(-7, 7);
+    // y = rnd.Next(-7, 7);
+
+    Vector3 initPos = new Vector3(x, y, -11);
+
+		if(x < float.MaxValue && y < float.MaxValue){
+			Instantiate(insect, initPos, Quaternion.identity);
+		}
   }
 }

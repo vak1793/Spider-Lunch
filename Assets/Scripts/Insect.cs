@@ -1,10 +1,11 @@
+using System;
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class Insect : MonoBehaviour {
 
-	public float insectMoveSpeed, breakOutTime;
+	public float insectMoveSpeed, breakOutTime, energyValue;
 	bool isStuck = false, hasGottenStuck = false;
 	Time collideTime;
 
@@ -52,6 +53,10 @@ public class Insect : MonoBehaviour {
 	        if(go == gameObject) continue;
 	        if(go.tag == "Edge") {
 						// Debug.Log(string.Format("{0} hit {1}", gameObject.name, go.name));
+						string[] splitName = go.name.Split(new string[] {"d"}, StringSplitOptions.RemoveEmptyEntries);
+						int strandIndex = Int32.Parse(splitName[1]) + 3;
+						// Debug.Break();
+						// transform.position =
 	          isStuck = true;
 						hasGottenStuck = true;
 						Invoke("ReleaseInsect", breakOutTime);
@@ -71,6 +76,7 @@ public class Insect : MonoBehaviour {
 	        if(go == gameObject) continue;
 	        if(go.tag == "Player") {
 						// TODO: Update player score
+						go.GetComponent<Spider>().RestoreHealth(energyValue);
 	          Destroy(gameObject);
 	        }
 	      }

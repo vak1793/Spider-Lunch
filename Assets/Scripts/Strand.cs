@@ -18,7 +18,7 @@ public class Strand {
     m = (float) System.Math.Round((y2 - y1) / (x2 - x1), 3);
 
     if(double.IsInfinity(m)){
-      c = (float) System.Math.Round(y1, 3);
+      c = (float) System.Math.Round(x1, 3);
     } else {
       c = (float) System.Math.Round(y2 - (m * x2), 3);
     }
@@ -69,7 +69,7 @@ public class Strand {
     return false;
   }
 
-  public bool ContainsPoint(float x, float y) {
+  public bool ContainsPoint(float x, float y, float maxDistance = 0.3f) {
     float x1, y1, x2, y2, deltaX, deltaY, distFromLine;
 
     x1 = startNode.xPos();
@@ -114,14 +114,14 @@ public class Strand {
     }
 
     distFromLine = Mathf.Abs((deltaY * x) - (deltaX * y) + (x2 * y1) - (x1 * y2))/StrandLength();
-    if(distFromLine > 0.1) {
+    if(distFromLine > maxDistance) {
       // Debug.Log(string.Format("({0},{1}) is {2} units away", x, y, distFromLine));
       return false;
     }
     return true;
   }
 
-  public bool ContainsPointWithEnds(float x, float y) {
+  public bool ContainsPointWithEnds(float x, float y, float maxDistance = 0.3f) {
     float x1, y1, x2, y2, deltaX, deltaY, distFromLine;
 
     x1 = startNode.xPos();
@@ -166,7 +166,7 @@ public class Strand {
     }
 
     distFromLine = Mathf.Abs((deltaY * x) - (deltaX * y) + (x2 * y1) - (x1 * y2))/StrandLength();
-    if(distFromLine > 0.1) {
+    if(distFromLine > maxDistance) {
       // Debug.Log(string.Format("({0},{1}) is {2} units away", x, y, distFromLine));
       return false;
     }
@@ -176,12 +176,13 @@ public class Strand {
   public Vector3 ClosestPoint(Vector3 pos){
     float[] pt = new float[2];
     float x = pos.x, y = pos.y;
+    // Debug.Log(string.Format("m = {0}, c = {1}", m, c));
     if (double.IsInfinity(m)){
-      //Debug.Log("vertical line");
+      // Debug.Log("vertical line");
       pt[0] = c;
       pt[1] = y;
     } else if (m == 0) {
-      //Debug.Log("horizontal line");
+      // Debug.Log("horizontal line");
       pt[0] = x;
       pt[1] = c;
     } else {
@@ -195,6 +196,8 @@ public class Strand {
       // float variance = pt[1] - (m2 * pt[0]) - c2;
       // Debug.Log(string.Format("variance = {0}",variance));
     }
+
+    // Debug.Log(string.Format("closest point on {4} to ({0},{1}) is ({2},{3})", x,y,pt[0],pt[1],PositionString()));
     return new Vector3(pt[0], pt[1], 0);
   }
 
